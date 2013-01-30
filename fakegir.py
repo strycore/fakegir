@@ -5,6 +5,7 @@ from lxml import etree
 
 GIR_PATH = '/usr/share/gir-1.0/'
 FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
+XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
 
 def get_docstring(callable_tag):
@@ -57,20 +58,29 @@ def extract_methods(class_tag):
 
 
 def build_classes(classes):
-    all_classes = set([class_info[0] for class_info in classes])
-    written_classes = set()
-    imports = set()
     classes_text = ""
+    imports = set()
+    local_parents = set()
+    written_classes = set()
+    all_classes = set([class_info[0] for class_info in classes])
+    for class_info in classes:
+        parents = class_info[1]
+        local_parents = local_parents.union(set([class_parent
+                                                 for class_parent in parents
+                                                 if '.' not in class_parent]))
     while written_classes != all_classes:
-        for class_name, parent_class, class_content in classes:
+        for class_name, parents, class_content in classes:
+            skip = False
+            for parent in parents:
+                if '.' not in parent and parent not in written_classes:
+                    skip = True
             if class_name in written_classes:
+                skip = True
+            if skip:
                 continue
-            elif (parent_class in all_classes
-                  and parent_class not in written_classes):
-                continue
-            else:
-                classes_text += class_content
-                written_classes.add(class_name)
+            classes_text += class_content
+            written_classes.add(class_name)
+            for parent_class in parents:
                 if '.' in parent_class:
                     imports.add(parent_class[:parent_class.index('.')])
     return classes_text, imports
@@ -82,14 +92,20 @@ def extract_namespace(namespace):
     for element in namespace:
         tag = etree.QName(element)
         tag_name = tag.localname
-        if tag_name == 'class':
+        if tag_name in ('class', 'interface'):
             class_name = element.attrib['name']
             docstring = get_docstring(element)
-            parent = element.attrib.get('parent', 'object')
+            parents = []
+            parent = element.attrib.get('parent')
+            if parent:
+                parents.append(parent)
+            implements = element.findall('{%s}implements' % XMLNS)
+            for implement in implements:
+                parents.append(implement.attrib['name'])
             class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
-                             % (class_name, parent, docstring))
+                             % (class_name, ", ".join(parents), docstring))
             class_content += extract_methods(element)
-            classes.append((class_name, parent, class_content))
+            classes.append((class_name, parents, class_content))
         if tag_name == 'function':
             function_name = element.attrib['name']
             docstring = get_docstring(element)
@@ -114,11 +130,8 @@ def extract_namespace(namespace):
 def parse_gir(gir_path):
     tree = etree.parse(gir_path)
     root = tree.getroot()
-    elements = root.findall('./')
-    namespace_content = ""
-    for element in elements:
-        if 'namespace' in element.tag:
-            namespace_content = extract_namespace(element)
+    namespace = root.findall('{%s}namespace' % XMLNS)[0]
+    namespace_content = extract_namespace(namespace)
     return namespace_content
 
 
