@@ -29,5 +29,5 @@ Todo
 
 Fakegir is still at a very early stage, there's a lot more info that could be
 pulled from gir files and used for autocompletion. For the moment constants,
-functions, classes and their methods are available, but docstrings and
-parameters will be added soon.
+functions, classes and their methods are available, but parameters will be
+added soon.

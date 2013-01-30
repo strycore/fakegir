@@ -7,12 +7,23 @@ GIR_PATH = '/usr/share/gir-1.0/'
 FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
 
 
-def insert_function(name, args, depth):
+def get_docstring(callable_tag):
+    for element in callable_tag:
+        tag = etree.QName(element)
+        if tag.localname == 'doc':
+            return element.text.encode('utf-8') + "\n"
+    return ''
+
+
+def insert_function(name, args, depth, docstring=''):
     if keyword.iskeyword(name):
         name = "_" + name
     arglist = ", ".join(args)
-    return "%sdef %s(%s):\n%spass\n" % ('    ' * depth, name, arglist,
-                                        '    ' * (depth + 1))
+    return "%sdef %s(%s):\n%s\"\"\"%s\"\"\"\n" % ('    ' * depth,
+                                                  name,
+                                                  arglist,
+                                                  '    ' * (depth + 1),
+                                                  docstring)
 
 
 def extract_methods(class_tag):
@@ -21,7 +32,9 @@ def extract_methods(class_tag):
         tag = etree.QName(element)
         if tag.localname == 'method':
             method_name = element.attrib['name']
-            methods_content += insert_function(method_name, ['self'], 1)
+            docstring = get_docstring(element)
+            methods_content += insert_function(method_name, ['self'], 1,
+                                               docstring)
     return methods_content
 
 
@@ -31,16 +44,22 @@ def extract_namespace(namespace):
         tag = etree.QName(element)
         tag_name = tag.localname
         if tag_name == 'class':
-            class_content = "\nclass %s:\n    pass\n" % element.attrib['name']
+            class_name = element.attrib['name']
+            docstring = get_docstring(element)
+            class_content = ("\nclass %s:\n    \"\"\"%s\"\"\"\n"
+                             % (class_name, docstring))
             class_content += extract_methods(element)
             namespace_content += class_content
         if tag_name == 'function':
             function_name = element.attrib['name']
-            namespace_content += insert_function(function_name, [], 0)
+            docstring = get_docstring(element)
+            namespace_content += insert_function(function_name, [], 0,
+                                                 docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
             constant_value = element.attrib['value'] or 'None'
-            namespace_content += "%s = %s\n" % (constant_name, constant_value)
+            namespace_content += ("%s = '%s'\n"
+                                  % (constant_name, constant_value))
     return namespace_content
 
 
@@ -84,4 +103,5 @@ if __name__ == "__main__":
         fakegir_path = os.path.join(FAKEGIR_PATH, 'gi/repository',
                                     module_name + ".py")
         with open(fakegir_path, 'w') as fakegir_file:
+            fakegir_file.write("# -*- coding: utf-8 -*-\n")
             fakegir_file.write(fakegir_content)
