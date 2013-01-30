@@ -1,9 +1,18 @@
 """Build a fake python package from the information found in gir files"""
 import os
+import keyword
 from lxml import etree
 
 GIR_PATH = '/usr/share/gir-1.0/'
 FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
+
+
+def insert_function(name, args, depth):
+    if keyword.iskeyword(name):
+        name = "_" + name
+    arglist = ", ".join(args)
+    return "%sdef %s(%s):\n%spass\n" % ('    ' * depth, name, arglist,
+                                        '    ' * (depth + 1))
 
 
 def extract_methods(class_tag):
@@ -11,8 +20,8 @@ def extract_methods(class_tag):
     for element in class_tag:
         tag = etree.QName(element)
         if tag.localname == 'method':
-            methods_content += ("    def %s(self):\n        pass\n"
-                                % element.attrib['name'])
+            method_name = element.attrib['name']
+            methods_content += insert_function(method_name, ['self'], 1)
     return methods_content
 
 
@@ -20,10 +29,18 @@ def extract_namespace(namespace):
     namespace_content = ""
     for element in namespace:
         tag = etree.QName(element)
-        if tag.localname == 'class':
+        tag_name = tag.localname
+        if tag_name == 'class':
             class_content = "\nclass %s:\n    pass\n" % element.attrib['name']
             class_content += extract_methods(element)
             namespace_content += class_content
+        if tag_name == 'function':
+            function_name = element.attrib['name']
+            namespace_content += insert_function(function_name, [], 0)
+        if tag_name == 'constant':
+            constant_name = element.attrib['name']
+            constant_value = element.attrib['value'] or 'None'
+            namespace_content += "%s = %s\n" % (constant_name, constant_value)
     return namespace_content
 
 
@@ -40,6 +57,8 @@ def parse_gir(gir_path):
 
 def iter_girs():
     for gir_file in os.listdir(GIR_PATH):
+        # Don't know what to do with those, guess nobody uses PyGObject
+        # for Gtk 2.0 anyway
         if gir_file in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
             continue
         module_name = gir_file[:gir_file.index('-')]

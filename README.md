@@ -27,7 +27,7 @@ Add this to your vimrc for vim support:
 Todo
 ----
 
-Fakegir is still at a very early stage, there's a lot more info that could be 
-pulled from gir files and used for autocompletion. For the moment, only classes
-and their methods are available, but functions, constants, and docstrings will 
-be added soon.
+Fakegir is still at a very early stage, there's a lot more info that could be
+pulled from gir files and used for autocompletion. For the moment constants,
+functions, classes and their methods are available, but docstrings and
+parameters will be added soon.
