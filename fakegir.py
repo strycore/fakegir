@@ -15,6 +15,22 @@ def get_docstring(callable_tag):
     return ''
 
 
+def get_parameters(element):
+    params = []
+    for elem_property in element:
+        tag = etree.QName(elem_property)
+        if tag.localname == 'parameters':
+            for param in elem_property:
+                try:
+                    param_name = param.attrib['name']
+                    if keyword.iskeyword(param_name):
+                        param_name = "_" + param_name
+                    params.append(param_name)
+                except:
+                    pass
+    return params
+
+
 def insert_function(name, args, depth, docstring=''):
     if keyword.iskeyword(name):
         name = "_" + name
@@ -33,7 +49,9 @@ def extract_methods(class_tag):
         if tag.localname == 'method':
             method_name = element.attrib['name']
             docstring = get_docstring(element)
-            methods_content += insert_function(method_name, ['self'], 1,
+            params = get_parameters(element)
+            params.insert(0, 'self')
+            methods_content += insert_function(method_name, params, 1,
                                                docstring)
     return methods_content
 
@@ -75,7 +93,8 @@ def extract_namespace(namespace):
         if tag_name == 'function':
             function_name = element.attrib['name']
             docstring = get_docstring(element)
-            namespace_content += insert_function(function_name, [], 0,
+            params = get_parameters(element)
+            namespace_content += insert_function(function_name, params, 0,
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
