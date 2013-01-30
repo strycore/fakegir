@@ -54,7 +54,10 @@ def insert_enum(element):
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
+        if enum_name[0].isdigit():
+            enum_name = '_' + enum_name
         enum_value = member.attrib['value']
+        enum_value = enum_value.replace('\\', '\\\\')
         enum_content += "    %s = '%s'\n" % (enum_name.upper(), enum_value)
     return enum_content
 
@@ -68,7 +71,8 @@ def extract_methods(class_tag):
             method_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
-            params.insert(0, 'self')
+            if 'self' not in params:
+                params.insert(0, 'self')
             methods_content += insert_function(method_name, params, 1,
                                                docstring)
     return methods_content
@@ -137,7 +141,7 @@ def extract_namespace(namespace):
         if tag_name == 'constant':
             constant_name = element.attrib['name']
             constant_value = element.attrib['value'] or 'None'
-            constant_value.replace("\\", "\\\\")
+            constant_value = constant_value.replace("\\", "\\\\")
             namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
                                   % (constant_name, constant_value))
     classes_content, imports = build_classes(classes)
