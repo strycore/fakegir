@@ -9,6 +9,7 @@ XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
 
 def get_docstring(callable_tag):
+    """Return docstring text for a callable"""
     for element in callable_tag:
         tag = etree.QName(element)
         if tag.localname == 'doc':
@@ -17,6 +18,7 @@ def get_docstring(callable_tag):
 
 
 def get_parameters(element):
+    """Return the parameters of a callable"""
     params = []
     for elem_property in element:
         tag = etree.QName(elem_property)
@@ -27,12 +29,13 @@ def get_parameters(element):
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
                     params.append(param_name)
-                except:
+                except KeyError:
                     pass
     return params
 
 
 def insert_function(name, args, depth, docstring=''):
+    """Returns a function as a string"""
     if keyword.iskeyword(name):
         name = "_" + name
     arglist = ", ".join(args)
@@ -44,6 +47,7 @@ def insert_function(name, args, depth, docstring=''):
 
 
 def extract_methods(class_tag):
+    """Return methods from a class element"""
     methods_content = ''
     for element in class_tag:
         tag = etree.QName(element)
@@ -58,6 +62,8 @@ def extract_methods(class_tag):
 
 
 def build_classes(classes):
+    """Order classes with correct dependency order also return external
+    imports"""
     classes_text = ""
     imports = set()
     local_parents = set()
@@ -87,6 +93,7 @@ def build_classes(classes):
 
 
 def extract_namespace(namespace):
+    """Extract all information from a gir namespace"""
     namespace_content = ""
     classes = []
     for element in namespace:
@@ -114,7 +121,8 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
-            constant_value = element.attrib['value'].replace("\\", "\\\\") or 'None'
+            constant_value = element.attrib['value'] or 'None'
+            constant_value.replace("\\", "\\\\")
             namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
                                   % (constant_name, constant_value))
     classes_content, imports = build_classes(classes)
@@ -128,6 +136,7 @@ def extract_namespace(namespace):
 
 
 def parse_gir(gir_path):
+    """Extract everything from a gir file"""
     tree = etree.parse(gir_path)
     root = tree.getroot()
     namespace = root.findall('{%s}namespace' % XMLNS)[0]
@@ -136,6 +145,7 @@ def parse_gir(gir_path):
 
 
 def iter_girs():
+    """Return a generator of all available gir files"""
     for gir_file in os.listdir(GIR_PATH):
         # Don't know what to do with those, guess nobody uses PyGObject
         # for Gtk 2.0 anyway
@@ -146,7 +156,8 @@ def iter_girs():
         yield gir_info
 
 
-if __name__ == "__main__":
+def generate_fakegir():
+    """Main function"""
     fakegir_repo_dir = os.path.join(FAKEGIR_PATH, 'gi/repository')
     if not os.path.exists(fakegir_repo_dir):
         os.makedirs(fakegir_repo_dir)
@@ -166,3 +177,6 @@ if __name__ == "__main__":
         with open(fakegir_path, 'w') as fakegir_file:
             fakegir_file.write("# -*- coding: utf-8 -*-\n")
             fakegir_file.write(fakegir_content)
+
+if __name__ == "__main__":
+    generate_fakegir()
