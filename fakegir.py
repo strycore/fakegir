@@ -46,6 +46,19 @@ def insert_function(name, args, depth, docstring=''):
                                                   docstring)
 
 
+def insert_enum(element):
+    """Returns an enum (class with attributes only) as text"""
+    enum_name = element.attrib['name']
+    docstring = get_docstring(element)
+    enum_content = "class %s:\n    \"\"\"%s\"\"\"\n" % (enum_name, docstring)
+    members = element.findall("{%s}member" % XMLNS)
+    for member in members:
+        enum_name = member.attrib['name']
+        enum_value = member.attrib['value']
+        enum_content += "    %s = '%s'\n" % (enum_name.upper(), enum_value)
+    return enum_content
+
+
 def extract_methods(class_tag):
     """Return methods from a class element"""
     methods_content = ''
@@ -113,6 +126,8 @@ def extract_namespace(namespace):
                              % (class_name, ", ".join(parents), docstring))
             class_content += extract_methods(element)
             classes.append((class_name, parents, class_content))
+        if tag_name == 'enumeration':
+            namespace_content += insert_enum(element)
         if tag_name == 'function':
             function_name = element.attrib['name']
             docstring = get_docstring(element)
