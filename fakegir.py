@@ -1,3 +1,4 @@
+"""Build a fake python package from the information found in gir files"""
 import os
 from lxml import etree
 
@@ -50,6 +51,14 @@ if __name__ == "__main__":
     fakegir_repo_dir = os.path.join(FAKEGIR_PATH, 'gi/repository')
     if not os.path.exists(fakegir_repo_dir):
         os.makedirs(fakegir_repo_dir)
+
+    gi_init_path = os.path.join(FAKEGIR_PATH, 'gi/__init__.py')
+    with open(gi_init_path, 'w') as gi_init_file:
+        gi_init_file.write('')
+    repo_init_path = os.path.join(FAKEGIR_PATH, 'gi/repository/__init__.py')
+    with open(repo_init_path, 'w') as repo_init_file:
+        repo_init_file.write('')
+
     for module_name, gir_file in iter_girs():
         gir_path = os.path.join(GIR_PATH, gir_file)
         fakegir_content = parse_gir(gir_path)
