@@ -16,7 +16,9 @@ Requirements
 ------------
 
 You'll need python-lxml to parse gir files.
+
 In order to get every required gir file, install the libgirepository1.0-dev package
+
 If you want autocompletion for additional packages, you can find it with apt-file :
 
     $ apt-file search ".gir" | grep -i unity
@@ -38,6 +40,7 @@ Don't forget to run fakegir when you install new gir files or upgrade your distr
 
 Vim support
 -----------
+    
 Add this to your vimrc for vim support:
 
     if has('python')
