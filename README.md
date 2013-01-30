@@ -11,6 +11,12 @@ want to add to your Python PATH.
 Of course, you shouldn't put this package in your global PYTHONPATH or your 
 PyGObject applications will stop working immediatly ;)
 
+Requirements
+------------
+
+In order to get every required gir file, install the libgirepository1.0-dev package
+You'll also need python-lxml
+
 Vim support
 -----------
 Add this to your vimrc for vim support:
@@ -23,11 +29,3 @@ Add this to your vimrc for vim support:
     sys.path.insert(0, os.path.join(os.path.expanduser('~'), '.cache/fakegir/'))
     EOF
 
-
-Todo
-----
-
-Fakegir is still at a very early stage, there's a lot more info that could be
-pulled from gir files and used for autocompletion. For the moment constants,
-functions, classes and their methods are available, but parameters will be
-added soon.

@@ -98,17 +98,14 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
-            constant_value = element.attrib['value'] or 'None'
-            namespace_content += ("%s = '%s'\n"
+            constant_value = element.attrib['value'].replace("\\", "\\\\") or 'None'
+            namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
                                   % (constant_name, constant_value))
     classes_content, imports = build_classes(classes)
     namespace_content += classes_content
     imports_text = ""
     for _import in imports:
-        if _import in ("GObject", "Gio", "GLib"):
-            imports_text += "class %s(DirtyVoodoo):\n    ''''''\n" % _import
-        else:
-            imports_text += "import %s\n" % _import
+        imports_text += "import %s\n" % _import
 
     namespace_content = imports_text + namespace_content
     return namespace_content
@@ -154,13 +151,5 @@ if __name__ == "__main__":
         fakegir_path = os.path.join(FAKEGIR_PATH, 'gi/repository',
                                     module_name + ".py")
         with open(fakegir_path, 'w') as fakegir_file:
-            fakegir_file.write("""# -*- coding: utf-8 -*-
-class MetaVoodoo(type):
-    def __getattribute__(cls, k):
-        return type
-
-class DirtyVoodoo:
-    __metaclass__ = MetaVoodoo
-    def __getattribute__(self, name):
-        return type\n""")
+            fakegir_file.write("# -*- coding: utf-8 -*-\n")
             fakegir_file.write(fakegir_content)
