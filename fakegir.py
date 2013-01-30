@@ -11,7 +11,7 @@ def get_docstring(callable_tag):
     for element in callable_tag:
         tag = etree.QName(element)
         if tag.localname == 'doc':
-            return element.text.encode('utf-8') + "\n"
+            return element.text.replace("\\x", 'x').encode('utf-8') + "\n"
     return ''
 
 
@@ -38,18 +38,40 @@ def extract_methods(class_tag):
     return methods_content
 
 
+def build_classes(classes):
+    all_classes = set([class_info[0] for class_info in classes])
+    written_classes = set()
+    imports = set()
+    classes_text = ""
+    while written_classes != all_classes:
+        for class_name, parent_class, class_content in classes:
+            if class_name in written_classes:
+                continue
+            elif (parent_class in all_classes
+                  and parent_class not in written_classes):
+                continue
+            else:
+                classes_text += class_content
+                written_classes.add(class_name)
+                if '.' in parent_class:
+                    imports.add(parent_class[:parent_class.index('.')])
+    return classes_text, imports
+
+
 def extract_namespace(namespace):
     namespace_content = ""
+    classes = []
     for element in namespace:
         tag = etree.QName(element)
         tag_name = tag.localname
         if tag_name == 'class':
             class_name = element.attrib['name']
             docstring = get_docstring(element)
-            class_content = ("\nclass %s:\n    \"\"\"%s\"\"\"\n"
-                             % (class_name, docstring))
+            parent = element.attrib.get('parent', 'object')
+            class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
+                             % (class_name, parent, docstring))
             class_content += extract_methods(element)
-            namespace_content += class_content
+            classes.append((class_name, parent, class_content))
         if tag_name == 'function':
             function_name = element.attrib['name']
             docstring = get_docstring(element)
@@ -60,6 +82,16 @@ def extract_namespace(namespace):
             constant_value = element.attrib['value'] or 'None'
             namespace_content += ("%s = '%s'\n"
                                   % (constant_name, constant_value))
+    classes_content, imports = build_classes(classes)
+    namespace_content += classes_content
+    imports_text = ""
+    for _import in imports:
+        if _import in ("GObject", "Gio", "GLib"):
+            imports_text += "class %s(DirtyVoodoo):\n    ''''''\n" % _import
+        else:
+            imports_text += "import %s\n" % _import
+
+    namespace_content = imports_text + namespace_content
     return namespace_content
 
 
@@ -103,5 +135,13 @@ if __name__ == "__main__":
         fakegir_path = os.path.join(FAKEGIR_PATH, 'gi/repository',
                                     module_name + ".py")
         with open(fakegir_path, 'w') as fakegir_file:
-            fakegir_file.write("# -*- coding: utf-8 -*-\n")
+            fakegir_file.write("""# -*- coding: utf-8 -*-
+class MetaVoodoo(type):
+    def __getattribute__(cls, k):
+        return type
+
+class DirtyVoodoo:
+    __metaclass__ = MetaVoodoo
+    def __getattribute__(self, name):
+        return type\n""")
             fakegir_file.write(fakegir_content)
