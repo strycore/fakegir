@@ -156,8 +156,9 @@ def extract_namespace(namespace):
 
 def parse_gir(gir_path):
     """Extract everything from a gir file"""
-    tree = etree.parse(gir_path)
-    root = tree.getroot()
+    parser = etree.XMLParser(encoding='utf-8', recover=True)
+    content = open(gir_path).read()
+    root = etree.XML(content, parser)
     namespace = root.findall('{%s}namespace' % XMLNS)[0]
     namespace_content = extract_namespace(namespace)
     return namespace_content
