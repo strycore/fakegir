@@ -77,8 +77,6 @@ def extract_methods(class_tag):
             method_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
-            #if 'self' not in params:
-                #params.insert(0, 'self')
             methods_content += insert_function(method_name, params, 1,
                                                docstring)
     return methods_content
