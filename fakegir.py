@@ -34,7 +34,8 @@ def get_parameters(element):
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
-                    params.append(param_name)
+                    if not param_name in params:
+                        params.append(param_name)
                 except KeyError:
                     pass
     return params
