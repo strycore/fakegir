@@ -13,7 +13,7 @@ def get_docstring(callable_tag):
     for element in callable_tag:
         tag = etree.QName(element)
         if tag.localname == 'doc':
-            return element.text.replace("\\x", 'x').encode('utf-8') + "\n"
+            return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
     return ''
 
 
