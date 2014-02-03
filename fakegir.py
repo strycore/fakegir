@@ -25,10 +25,17 @@ def get_parameters(element):
         if tag.localname == 'parameters':
             for param in elem_property:
                 try:
-                    param_name = param.attrib['name']
+                    subtag = etree.QName(param)
+                    if subtag.localname == "instance-parameter":
+                        param_name = 'self'
+                    else:
+                        param_name = param.attrib['name']
+
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
-                    params.append(param_name)
+
+                    if not param_name in params:
+                        params.append(param_name)
                 except KeyError:
                     pass
     return params
@@ -71,8 +78,6 @@ def extract_methods(class_tag):
             method_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
-            if 'self' not in params:
-                params.insert(0, 'self')
             methods_content += insert_function(method_name, params, 1,
                                                docstring)
     return methods_content
