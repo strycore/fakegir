@@ -1,5 +1,6 @@
 """Build a fake python package from the information found in gir files"""
 import os
+import sys
 import keyword
 from lxml import etree
 
@@ -16,6 +17,17 @@ def get_docstring(callable_tag):
             return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
     return ''
 
+def get_parameter_type(element):
+    """Returns the type of a parameter"""
+    parm_type = ""
+    for elem_property in element:
+        tag = etree.QName(elem_property)
+        if tag.localname == "type":
+            parm_type = elem_property.attrib['name']
+            break
+
+    return parm_type
+
 
 def get_parameters(element):
     """Return the parameters of a callable"""
@@ -31,26 +43,40 @@ def get_parameters(element):
                     else:
                         param_name = param.attrib['name']
 
+                    parm_type = get_parameter_type(param)
+
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
                     if not param_name in params:
-                        params.append(param_name)
+                        params.append( (param_name, parm_type) )
                 except KeyError:
                     pass
     return params
+
 
 
 def insert_function(name, args, depth, docstring=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name):
         name = "_" + name
-    arglist = ", ".join(args)
-    return "%sdef %s(%s):\n%s\"\"\"%s\"\"\"\n" % ('    ' * depth,
+    arglist = ", ".join([arg[0] for arg in args])
+
+    epydoc_str = "\n".join(
+                 ["@param %s: %s" % (pname, ptype) if pname != "self" else ""
+                  for (pname, ptype) in args])
+
+    full_docstr = "\n".join(
+                  ['    '*(depth+1) + l
+                   for l in (docstring +
+                             "\n" +
+                             epydoc_str +
+                             "\n").split("\n")])
+    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % ('    ' * depth,
                                                   name,
                                                   arglist,
                                                   '    ' * (depth + 1),
-                                                  docstring)
+                                                  full_docstr)
 
 
 def insert_enum(element):
