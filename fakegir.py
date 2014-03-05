@@ -135,7 +135,7 @@ def extract_namespace(namespace):
                              % (class_name, ", ".join(parents), docstring))
             class_content += extract_methods(element)
             classes.append((class_name, parents, class_content))
-        if tag_name == 'enumeration':
+        if (tag_name == 'enumeration') or (tag_name == "bitfield"):
             namespace_content += insert_enum(element)
         if tag_name == 'function':
             function_name = element.attrib['name']
