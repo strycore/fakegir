@@ -1,6 +1,5 @@
 """Build a fake python package from the information found in gir files"""
 import os
-import sys
 import keyword
 from lxml import etree
 
@@ -16,6 +15,7 @@ def get_docstring(callable_tag):
         if tag.localname == 'doc':
             return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
     return ''
+
 
 def get_parameter_type(element):
     """Returns the type of a parameter"""
@@ -49,11 +49,10 @@ def get_parameters(element):
                         param_name = "_" + param_name
 
                     if not param_name in params:
-                        params.append( (param_name, parm_type) )
+                        params.append((param_name, parm_type))
                 except KeyError:
                     pass
     return params
-
 
 
 def insert_function(name, args, depth, docstring=''):
@@ -72,11 +71,9 @@ def insert_function(name, args, depth, docstring=''):
                              "\n" +
                              epydoc_str +
                              "\n").split("\n")])
-    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % ('    ' * depth,
-                                                  name,
-                                                  arglist,
-                                                  '    ' * (depth + 1),
-                                                  full_docstr)
+    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+        '    ' * depth, name, arglist, '    ' * (depth + 1), full_docstr
+    )
 
 
 def insert_enum(element):
