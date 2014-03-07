@@ -8,6 +8,37 @@ GIR_PATH = '/usr/share/gir-1.0/'
 FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
+GIR_TO_NATIVE_TYPEMAP = {'gboolean': 'bool',
+                         'gint': 'int',
+                         'guint': 'int',
+                         'gint64': 'int',
+                         'guint64': 'int',
+                         'none': 'None',
+                         'gchar': 'str',
+                         'guchar': 'str',
+                         'gchar*': 'str',
+                         'guchar*': 'str',
+                         'glong': 'long',
+                         'gulong': 'long',
+                         'glong64': 'long',
+                         'gulong64': 'long',
+                         'gfloat': 'float',
+                         'gdouble': 'float',
+                         'string': 'str',
+                         'GString': 'str'}
+
+
+def get_native_type(typename):
+    if typename[:len("const ")] == "const ":
+        typename = typename.replace("const ", "")
+
+    if (typename in GIR_TO_NATIVE_TYPEMAP):
+        return GIR_TO_NATIVE_TYPEMAP[typename]
+    else:
+        return typename
+
+    return ""
+
 
 def get_docstring(callable_tag):
     """Return docstring text for a callable"""
@@ -96,7 +127,7 @@ def insert_function(name, args, returntype, depth, docstring=''):
                        if (len(pdoc) > 0 and pname != "self") else ""
                        for (pname, pdoc, ptype) in args]
 
-    epydoc_type_strs = ["@type %s: %s" % (pname, ptype)
+    epydoc_type_strs = ["@type %s: %s" % (pname, get_native_type(ptype))
                         if (len(ptype) > 0 and pname != "self") else ""
                         for (pname, pdoc, ptype) in args]
 
@@ -105,7 +136,7 @@ def insert_function(name, args, returntype, depth, docstring=''):
         return_docstrs = ["@rtype: None"]
     else:
         return_docstrs = ["@returns: %s" % returntype[0],
-                          "@rtype: %s" % returntype[1]]
+                          "@rtype: %s" % get_native_type(returntype[1])]
 
     def do_indent(lines):
         return ['    '*(depth+1) + l for l in lines]
