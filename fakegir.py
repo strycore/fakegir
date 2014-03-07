@@ -178,7 +178,7 @@ def extract_methods(class_tag):
     methods_content = ''
     for element in class_tag:
         tag = etree.QName(element)
-        if tag.localname == 'method':
+        if (tag.localname == 'method') or (tag.localname == 'virtual-method'):
             method_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
