@@ -17,6 +17,7 @@ def get_docstring(callable_tag):
             return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
     return ''
 
+
 def get_parameter_type(element):
     """Returns the type of a parameter"""
     parm_type = ""
@@ -27,6 +28,18 @@ def get_parameter_type(element):
             break
 
     return parm_type
+
+
+def get_parameter_doc(element):
+    """Returns the doc of a parameter"""
+    parm_doc = ""
+    for elem_property in element:
+        tag = etree.QName(elem_property)
+        if tag.localname == "doc":
+            parm_doc = element.text.replace("\\x", 'x').encode('utf-8').replace("\n", " ").strip()
+            break
+
+    return parm_doc
 
 
 def get_parameters(element):
@@ -44,16 +57,16 @@ def get_parameters(element):
                         param_name = param.attrib['name']
 
                     parm_type = get_parameter_type(param)
+                    parm_doc = get_docstring(param).replace("\n", " ").strip()
 
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
                     if not param_name in params:
-                        params.append( (param_name, parm_type) )
+                        params.append((param_name, parm_doc, parm_type))
                 except KeyError:
                     pass
     return params
-
 
 
 def insert_function(name, args, depth, docstring=''):
@@ -62,25 +75,33 @@ def insert_function(name, args, depth, docstring=''):
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
-    epydoc_str = "\n".join(
-                 ["@param %s: %s" % (pname, ptype) if pname != "self" else ""
-                  for (pname, ptype) in args])
+    epydoc_doc_strs = ["@param %s: %s" % (pname, pdoc)
+                       if (len(pdoc) > 0 and pname != "self") else ""
+                       for (pname, pdoc, ptype) in args]
 
+    epydoc_type_strs = ["@type %s: %s" % (pname, ptype)
+                        if (len(ptype) > 0 and pname != "self") else ""
+                        for (pname, pdoc, ptype) in args]
+
+    def do_indent(lines):
+        return ['    '*(depth+1) + l for l in lines]
+
+    from itertools import chain
     full_docstr = "\n".join(
-                  ['    '*(depth+1) + l
-                   for l in (docstring +
-                             "\n" +
-                             epydoc_str +
-                             "\n").split("\n")])
+                  do_indent(chain(docstring.split("\n"),
+                                  filter(lambda s: len(s) > 0, epydoc_doc_strs),
+                                  filter(lambda s: len(s) > 0, epydoc_type_strs),
+                                  [""])))
+
     return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % ('    ' * depth,
-                                                  name,
-                                                  arglist,
-                                                  '    ' * (depth + 1),
-                                                  full_docstr)
+                                                    name,
+                                                    arglist,
+                                                    '    ' * (depth + 1),
+                                                    full_docstr)
 
 
 def insert_enum(element):
-    """Returns an enum (class with attributes only) as text"""
+    """returns an enum (class with attributes only) as text"""
     enum_name = element.attrib['name']
     docstring = get_docstring(element)
     enum_content = "class %s:\n    \"\"\"%s\"\"\"\n" % (enum_name, docstring)
@@ -96,7 +117,7 @@ def insert_enum(element):
 
 
 def extract_methods(class_tag):
-    """Return methods from a class element"""
+    """return methods from a class element"""
     methods_content = ''
     for element in class_tag:
         tag = etree.QName(element)
@@ -110,7 +131,7 @@ def extract_methods(class_tag):
 
 
 def build_classes(classes):
-    """Order classes with correct dependency order also return external
+    """order classes with correct dependency order also return external
     imports"""
     classes_text = ""
     imports = set()
@@ -141,7 +162,7 @@ def build_classes(classes):
 
 
 def extract_namespace(namespace):
-    """Extract all information from a gir namespace"""
+    """extract all information from a gir namespace"""
     namespace_content = ""
     classes = []
     for element in namespace:
@@ -171,7 +192,7 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
-            constant_value = element.attrib['value'] or 'None'
+            constant_value = element.attrib['value'] or 'none'
             constant_value = constant_value.replace("\\", "\\\\")
             namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
                                   % (constant_name, constant_value))
