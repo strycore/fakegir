@@ -117,7 +117,7 @@ def get_returntype(element):
     return ("", "none")
 
 
-def insert_function(name, args, returntype, depth, docstring=''):
+def insert_function(name, args, returntype, depth, docstring='', annotation=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name):
         name = "_" + name
@@ -150,11 +150,12 @@ def insert_function(name, args, returntype, depth, docstring=''):
                                   [""],
                                   )))
 
-    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % ('    ' * depth,
-                                                    name,
-                                                    arglist,
-                                                    '    ' * (depth + 1),
-                                                    full_docstr)
+    return "%s\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % ('    '*depth + annotation if len(annotation) > 0 else "",
+                                                        '    ' * depth,
+                                                        name,
+                                                        arglist,
+                                                        '    ' * (depth + 1),
+                                                        full_docstr)
 
 
 def insert_enum(element):
@@ -183,8 +184,32 @@ def extract_methods(class_tag):
             docstring = get_docstring(element)
             params = get_parameters(element)
             returntype = get_returntype(element)
-            methods_content += insert_function(method_name, params, returntype, 1,
-                                               docstring)
+
+            methods_content += insert_function(method_name, params, returntype,
+                                               1, docstring)
+
+    return methods_content
+
+
+def extract_constructors(class_tag):
+    """return the constructor methods for this class"""
+    class_name = class_tag.attrib["name"]
+    methods_content = ''
+    for element in class_tag:
+        tag = etree.QName(element)
+        if (tag.localname == 'constructor'):
+            method_name = element.attrib['name']
+            docstring = get_docstring(element)
+            params = get_parameters(element)
+            returntype = ("Newly created " + class_name, class_name)
+
+            if method_name == "new":
+                params.insert(0, ("self", "", ""))
+                methods_content += insert_function("__init__", params,
+                                                   returntype, 1, docstring)
+
+            methods_content += insert_function(method_name, params,
+                                               returntype, 1, docstring, annotation="@staticmethod")
     return methods_content
 
 
@@ -238,6 +263,7 @@ def extract_namespace(namespace):
                 parents.append(implement.attrib['name'])
             class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
                              % (class_name, ", ".join(parents), docstring))
+            class_content += extract_constructors(element)
             class_content += extract_methods(element)
             classes.append((class_name, parents, class_content))
         if (tag_name == 'enumeration') or (tag_name == "bitfield"):
