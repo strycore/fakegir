@@ -279,7 +279,7 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
-            constant_value = element.attrib['value'] or 'none'
+            constant_value = element.attrib['value'] or 'None'
             constant_value = constant_value.replace("\\", "\\\\")
             namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
                                   % (constant_name, constant_value))
