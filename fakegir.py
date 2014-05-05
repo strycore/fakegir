@@ -1,10 +1,11 @@
+#!/usr/bin/env python
 """Build a fake python package from the information found in gir files"""
 import os
 import keyword
 from lxml import etree
 
 GIR_PATH = '/usr/share/gir-1.0/'
-FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
+FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
 
@@ -19,14 +20,13 @@ def get_docstring(callable_tag):
 
 def get_parameter_type(element):
     """Returns the type of a parameter"""
-    parm_type = ""
+    param_type = ""
     for elem_property in element:
         tag = etree.QName(elem_property)
         if tag.localname == "type":
-            parm_type = elem_property.attrib['name']
+            param_type = elem_property.attrib['name']
             break
-
-    return parm_type
+    return param_type
 
 
 def get_parameters(element):
@@ -48,7 +48,7 @@ def get_parameters(element):
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
-                    if not param_name in params:
+                    if param_name not in params:
                         params.append((param_name, parm_type))
                 except KeyError:
                     pass
