@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """Build a fake python package from the information found in gir files"""
 import os
 import keyword
@@ -34,7 +35,7 @@ def get_parameters(element):
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
-                    if not param_name in params:
+                    if param_name not in params:
                         params.append(param_name)
                 except KeyError:
                     pass
