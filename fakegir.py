@@ -1,11 +1,11 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """Build a fake python package from the information found in gir files"""
 import os
 import keyword
 from lxml import etree
 
 GIR_PATH = '/usr/share/gir-1.0/'
-FAKEGIR_PATH = os.path.join(os.path.expanduser('~'), '.cache/fakegir')
+FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
 
@@ -16,6 +16,17 @@ def get_docstring(callable_tag):
         if tag.localname == 'doc':
             return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
     return ''
+
+
+def get_parameter_type(element):
+    """Returns the type of a parameter"""
+    param_type = ""
+    for elem_property in element:
+        tag = etree.QName(elem_property)
+        if tag.localname == "type":
+            param_type = elem_property.attrib['name']
+            break
+    return param_type
 
 
 def get_parameters(element):
@@ -32,11 +43,13 @@ def get_parameters(element):
                     else:
                         param_name = param.attrib['name']
 
+                    parm_type = get_parameter_type(param)
+
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
                     if param_name not in params:
-                        params.append(param_name)
+                        params.append((param_name, parm_type))
                 except KeyError:
                     pass
     return params
@@ -46,12 +59,19 @@ def insert_function(name, args, depth, docstring=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name):
         name = "_" + name
-    arglist = ", ".join(args)
-    return "%sdef %s(%s):\n%s\"\"\"%s\"\"\"\n" % ('    ' * depth,
-                                                  name,
-                                                  arglist,
-                                                  '    ' * (depth + 1),
-                                                  docstring)
+    arglist = ", ".join([arg[0] for arg in args])
+
+    epydoc_str = "\n".join(
+                 ["@param %s: %s" % (pname, ptype) if pname != "self" else ""
+                  for (pname, ptype) in args])
+
+    full_docstr = "\n".join([
+        '    '*(depth+1) + l
+        for l in ('{}\n{}\n'.format(docstring, epydoc_str)).split("\n")
+    ])
+    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+        '    ' * depth, name, arglist, '    ' * (depth + 1), full_docstr
+    )
 
 
 def insert_enum(element):
@@ -136,7 +156,7 @@ def extract_namespace(namespace):
                              % (class_name, ", ".join(parents), docstring))
             class_content += extract_methods(element)
             classes.append((class_name, parents, class_content))
-        if tag_name == 'enumeration':
+        if (tag_name == 'enumeration') or (tag_name == "bitfield"):
             namespace_content += insert_enum(element)
         if tag_name == 'function':
             function_name = element.attrib['name']
