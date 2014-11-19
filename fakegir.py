@@ -14,7 +14,7 @@ def get_docstring(callable_tag):
     for element in callable_tag:
         tag = etree.QName(element)
         if tag.localname == 'doc':
-            return element.text.replace("\\x", 'x').encode('utf-8') + b"\n"
+            return element.text.replace("\\x", 'x')
     return ''
 
 
@@ -48,6 +48,9 @@ def get_parameters(element):
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
 
+                    if param_name == '...':
+                        param_name = '*args'
+
                     if param_name not in params:
                         params.append((param_name, parm_type))
                 except KeyError:
@@ -57,7 +60,7 @@ def get_parameters(element):
 
 def insert_function(name, args, depth, docstring=''):
     """Returns a function as a string"""
-    if keyword.iskeyword(name):
+    if keyword.iskeyword(name) or name == 'print':
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
@@ -69,7 +72,7 @@ def insert_function(name, args, depth, docstring=''):
         '    '*(depth+1) + l
         for l in ('{}\n{}\n'.format(docstring, epydoc_str)).split("\n")
     ])
-    return "%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+    return "\n\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
         '    ' * depth, name, arglist, '    ' * (depth + 1), full_docstr
     )
 
@@ -78,7 +81,7 @@ def insert_enum(element):
     """Returns an enum (class with attributes only) as text"""
     enum_name = element.attrib['name']
     docstring = get_docstring(element)
-    enum_content = "class %s:\n    \"\"\"%s\"\"\"\n" % (enum_name, docstring)
+    enum_content = "\n\nclass %s:\n    \"\"\"%s\"\"\"\n" % (enum_name, docstring)
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
@@ -97,6 +100,8 @@ def extract_methods(class_tag):
         tag = etree.QName(element)
         if tag.localname == 'method':
             method_name = element.attrib['name']
+            if method_name == 'print':
+                method_name += "_"
             docstring = get_docstring(element)
             params = get_parameters(element)
             methods_content += insert_function(method_name, params, 1,
@@ -182,6 +187,7 @@ def extract_namespace(namespace):
 
 def parse_gir(gir_path):
     """Extract everything from a gir file"""
+    print("Parsing {}".format(gir_path))
     parser = etree.XMLParser(encoding='utf-8', recover=True)
     content = open(gir_path).read()
     root = etree.XML(content, parser)
