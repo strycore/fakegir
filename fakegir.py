@@ -4,7 +4,7 @@ import os
 import keyword
 from lxml import etree
 
-GIR_PATH = '/usr/share/gir-1.0/'
+GIR_PATHS = ['/usr/share/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
@@ -198,14 +198,15 @@ def parse_gir(gir_path):
 
 def iter_girs():
     """Return a generator of all available gir files"""
-    for gir_file in os.listdir(GIR_PATH):
-        # Don't know what to do with those, guess nobody uses PyGObject
-        # for Gtk 2.0 anyway
-        if gir_file in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
-            continue
-        module_name = gir_file[:gir_file.index('-')]
-        gir_info = (module_name, gir_file)
-        yield gir_info
+    for gir_path in GIR_PATHS:
+        for gir_file in os.listdir(gir_path):
+            # Don't know what to do with those, guess nobody uses PyGObject
+            # for Gtk 2.0 anyway
+            if gir_file in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
+                continue
+            module_name = gir_file[:gir_file.index('-')]
+            gir_info = (module_name, gir_file, gir_path)
+            yield gir_info
 
 
 def generate_fakegir():
@@ -221,8 +222,8 @@ def generate_fakegir():
     with open(repo_init_path, 'w') as repo_init_file:
         repo_init_file.write('')
 
-    for module_name, gir_file in iter_girs():
-        gir_path = os.path.join(GIR_PATH, gir_file)
+    for module_name, gir_file, gir_path in iter_girs():
+        gir_path = os.path.join(gir_path, gir_file)
         fakegir_content = parse_gir(gir_path)
         fakegir_path = os.path.join(FAKEGIR_PATH, 'gi/repository',
                                     module_name + ".py")
