@@ -196,7 +196,7 @@ def extract_methods(class_tag):
     methods_content = ''
     for element in class_tag:
         tag = QName(element)
-        if tag.localname == 'method':
+        if tag.localname in ('method', 'virtual-method'):
             method_name = element.attrib['name']
             if method_name == 'print':
                 method_name += "_"
