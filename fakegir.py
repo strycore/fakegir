@@ -195,6 +195,8 @@ def insert_enum(element):
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
+        if len(enum_name) == 0:
+            enum_name = "_"
         if len(enum_name) and enum_name[0].isdigit():
             enum_name = '_' + enum_name
         enum_value = member.attrib['value']
