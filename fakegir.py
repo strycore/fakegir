@@ -226,8 +226,9 @@ def extract_constructors(class_tag):
             returntype = ("Newly created " + class_name, class_name)
 
             if method_name == "new":
-                params.insert(0, ("self", "", ""))
-                methods_content += insert_function("__init__", params,
+                params_init = list(params)
+                params_init.insert(0, ("self", "", ""))
+                methods_content += insert_function("__init__", params_init,
                                                    returntype, 1, docstring)
 
             methods_content += insert_function(method_name,
