@@ -27,7 +27,8 @@ GIR_TO_NATIVE_TYPEMAP = {
     'gfloat': 'float',
     'gdouble': 'float',
     'string': 'str',
-    'GString': 'str'
+    'GString': 'str',
+    'utf8': 'str',
 }
 
 
