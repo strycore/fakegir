@@ -318,6 +318,8 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
+            if constant_name[0].isdigit:
+                constant_name = "_" + constant_name
             constant_value = element.attrib['value'] or 'None'
             constant_value = constant_value.replace("\\", "\\\\")
             namespace_content += "{} = r\"\"\"{}\"\"\"\n".format(constant_name,
