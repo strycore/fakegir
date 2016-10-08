@@ -2,6 +2,7 @@
 """Build a fake python package from the information found in gir files"""
 import os
 import keyword
+from itertools import chain
 from lxml import etree
 
 GIR_PATHS = ['/usr/share/gir-1.0/']
@@ -29,6 +30,18 @@ def get_parameter_type(element):
     return param_type
 
 
+def get_parameter_doc(element):
+    """Returns the doc of a parameter"""
+    param_doc = ""
+    for elem_property in element:
+        tag = etree.QName(elem_property)
+        if tag.localname == "doc":
+            param_doc = element.text.replace("\\x", 'x').encode('utf-8').replace("\n", " ").strip()
+            break
+
+    return param_doc
+
+
 def get_parameters(element):
     """Return the parameters of a callable"""
     params = []
@@ -44,6 +57,7 @@ def get_parameters(element):
                         param_name = param.attrib['name']
 
                     param_type = get_parameter_type(param)
+                    param_doc = get_docstring(param).replace("\n", " ").strip()
 
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
@@ -52,10 +66,14 @@ def get_parameters(element):
                         param_name = '*args'
 
                     if param_name not in params:
-                        params.append((param_name, param_type))
+                        params.append((param_name, param_doc, param_type))
                 except KeyError:
                     pass
     return params
+
+
+def indent(lines, depth):
+    return ['    '*(depth + 1) + l for l in lines]
 
 
 def insert_function(name, args, depth, docstring=''):
@@ -64,17 +82,33 @@ def insert_function(name, args, depth, docstring=''):
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
-    epydoc_str = "\n".join([
-        "@param %s: %s" % (pname, ptype) if pname != "self" else ""
-        for (pname, ptype) in args
-    ])
+    epydoc_doc_strs = [
+        "@param %s: %s" % (pname, pdoc)
+        if (len(pdoc) > 0 and pname != "self") else ""
+        for (pname, pdoc, ptype) in args
+    ]
 
-    full_docstr = "\n".join([
-        '    '*(depth+1) + l
-        for l in ('{}\n{}\n'.format(docstring, epydoc_str)).split("\n")
-    ])
+    epydoc_type_strs = [
+        "@type %s: %s" % (pname, ptype)
+        if (len(ptype) > 0 and pname != "self") else ""
+        for (pname, pdoc, ptype) in args
+    ]
+
+    full_docstr = "\n".join(
+        indent(chain(
+            docstring.split("\n"),
+            filter(lambda s: len(s) > 0, epydoc_doc_strs),
+            filter(lambda s: len(s) > 0, epydoc_type_strs),
+            [""]
+        ), depth)
+    )
+
     return "\n\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
-        '    ' * depth, name, arglist, '    ' * (depth + 1), full_docstr
+        '    ' * depth,
+        name,
+        arglist,
+        '    ' * (depth + 1),
+        full_docstr
     )
 
 
@@ -111,8 +145,9 @@ def extract_methods(class_tag):
 
 
 def build_classes(classes):
-    """Order classes with correct dependency order also return external
-    imports"""
+    """Order classes with correct dependency order
+    also return external imports
+    """
     classes_text = ""
     imports = set()
     local_parents = set()
