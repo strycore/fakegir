@@ -40,8 +40,11 @@ Don't forget to run fakegir when you install new gir files or upgrade your distr
 
 Vim support
 -----------
-    
-Add this to your vimrc for vim support:
+
+Vim support is a bit tricky for the moment. There are several options but
+these may or may not work with your Vim setup.
+
+For a basic vim setup, you can insert the snippet below to your vimrc:
 
     if has('python')
     py << EOF
@@ -50,3 +53,26 @@ Add this to your vimrc for vim support:
     import vim
     sys.path.insert(0, os.path.join(os.path.expanduser('~'), '.cache/fakegir/'))
     EOF
+
+A lot of Vim users use YouCompleteMe for autocompletion which itself uses Jedi
+for Python completion. Getting Fakegir to work with a bit trickier. The first
+option is to run the provided script `build-jedi-cache.sh`. This script is
+from a fork of Fakegir on github I merged back into my branch. I haven't
+witnessed this script actually  working with the current version of Jedi but 
+I'll leave it here in case someone manages to get something out of it. (Please
+make a Pull Request if you do).
+
+The other option which I use is to create a virtualenv and copy the fakegir
+gi package into it:
+
+    mkvirtualenv fakegir
+    cdvirtualenv
+    lib/python*/site-packages
+    cp -a ~/.cache/fakegir/gi .
+
+You'll have to activate this virtualenv before editing your GObject program
+with vim which makes it a bit more cumbersome but this method is the only one
+I could get autocompletion with vim and Jedi. Note that creating a Python3
+virtualenv doesn't seem to work and that the first autocompletion can be quite
+slow while Jedi is building the cache. (Fakegir modules, while containing no
+code at all are very large).
