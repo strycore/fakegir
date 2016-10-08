@@ -127,7 +127,7 @@ def get_returntype(element):
     return ("", "None")
 
 
-def insert_function(name, args, returntype, depth, docstring=''):
+def insert_function(name, args, returntype, depth, docstring='', annotation=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name) or name == 'print':
         name = "_" + name
@@ -154,7 +154,7 @@ def insert_function(name, args, returntype, depth, docstring=''):
             "@rtype: {}".format(get_native_type(returntype[1]))
         ]
 
-    full_docstr = "\n".join(
+    full_docstrings = "\n".join(
         indent(chain(
             docstring.split("\n"),
             [p for p in param_docstrings if p],
@@ -164,12 +164,13 @@ def insert_function(name, args, returntype, depth, docstring=''):
         ), depth)
     )
 
-    return "\n\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+    return "\n%s\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+        '    ' * depth + annotation,
         '    ' * depth,
         name,
         arglist,
         '    ' * (depth + 1),
-        full_docstr
+        full_docstrings
     )
 
 
@@ -208,6 +209,32 @@ def extract_methods(class_tag):
                                                returntype,
                                                1,
                                                docstring)
+    return methods_content
+
+
+def extract_constructors(class_tag):
+    """return the constructor methods for this class"""
+    class_name = class_tag.attrib["name"]
+    methods_content = ''
+    for element in class_tag:
+        tag = QName(element)
+        if (tag.localname == 'constructor'):
+            method_name = element.attrib['name']
+            docstring = get_docstring(element)
+            params = get_parameters(element)
+            returntype = ("Newly created " + class_name, class_name)
+
+            if method_name == "new":
+                params.insert(0, ("self", "", ""))
+                methods_content += insert_function("__init__", params,
+                                                   returntype, 1, docstring)
+
+            methods_content += insert_function(method_name,
+                                               params,
+                                               returntype,
+                                               1,
+                                               docstring,
+                                               annotation="@staticmethod")
     return methods_content
 
 
@@ -256,6 +283,7 @@ def extract_class(element):
         parents.append(implement.attrib['name'])
     class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
                      % (class_name, ", ".join(parents), docstring))
+    class_content += extract_constructors(element)
     class_content += extract_methods(element)
     return class_name, parents, class_content
 
