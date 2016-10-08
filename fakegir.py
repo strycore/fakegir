@@ -43,7 +43,7 @@ def get_parameters(element):
                     else:
                         param_name = param.attrib['name']
 
-                    parm_type = get_parameter_type(param)
+                    param_type = get_parameter_type(param)
 
                     if keyword.iskeyword(param_name):
                         param_name = "_" + param_name
@@ -52,7 +52,7 @@ def get_parameters(element):
                         param_name = '*args'
 
                     if param_name not in params:
-                        params.append((param_name, parm_type))
+                        params.append((param_name, param_type))
                 except KeyError:
                     pass
     return params
@@ -64,9 +64,10 @@ def insert_function(name, args, depth, docstring=''):
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
-    epydoc_str = "\n".join(
-                 ["@param %s: %s" % (pname, ptype) if pname != "self" else ""
-                  for (pname, ptype) in args])
+    epydoc_str = "\n".join([
+        "@param %s: %s" % (pname, ptype) if pname != "self" else ""
+        for (pname, ptype) in args
+    ])
 
     full_docstr = "\n".join([
         '    '*(depth+1) + l
@@ -161,7 +162,7 @@ def extract_namespace(namespace):
                              % (class_name, ", ".join(parents), docstring))
             class_content += extract_methods(element)
             classes.append((class_name, parents, class_content))
-        if (tag_name == 'enumeration') or (tag_name == "bitfield"):
+        if tag_name in ('enumeration', 'bitfield'):
             namespace_content += insert_enum(element)
         if tag_name == 'function':
             function_name = element.attrib['name']
