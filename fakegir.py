@@ -112,6 +112,11 @@ def indent(lines, depth):
     return ['    ' * (depth + 1) + l for l in lines]
 
 
+def make_safe(string):
+    """Avoid having unicode characters in docstrings (such as uXXXX)"""
+    return string.replace("\\u", "u").replace("\\U", "U")
+
+
 def get_returntype(element):
     """Return the return-type of a callable"""
     for elem_property in element:
@@ -135,7 +140,7 @@ def insert_function(name, args, returntype, depth, docstring='', annotation=''):
     arglist = ", ".join([arg[0] for arg in args])
 
     param_docstrings = [
-        "@param %s: %s" % (pname, pdoc)
+        "@param {}: {}".format(pname, make_safe(pdoc))
         if (len(pdoc) > 0 and pname != "self") else ""
         for (pname, pdoc, ptype) in args
     ]
@@ -219,7 +224,7 @@ def extract_constructors(class_tag):
     methods_content = ''
     for element in class_tag:
         tag = QName(element)
-        if (tag.localname == 'constructor'):
+        if tag.localname == 'constructor':
             method_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
@@ -315,8 +320,8 @@ def extract_namespace(namespace):
             constant_name = element.attrib['name']
             constant_value = element.attrib['value'] or 'None'
             constant_value = constant_value.replace("\\", "\\\\")
-            namespace_content += ("%s = r\"\"\"%s\"\"\"\n"
-                                  % (constant_name, constant_value))
+            namespace_content += "{} = r\"\"\"{}\"\"\"\n".format(constant_name,
+                                                                 constant_value)
     classes_content, imports = build_classes(classes)
     namespace_content += classes_content
     imports_text = ""
