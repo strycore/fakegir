@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a fake python package from the information found in gir files"""
 import os
+import re
 import keyword
 from itertools import chain
 from lxml.etree import QName, XML, XMLParser
@@ -133,6 +134,10 @@ def get_returntype(element):
     return ("", "None")
 
 
+def prettify(string):
+    return re.sub(r"([\s]{3,80})", r"\n\1", string)
+
+
 def insert_function(name, args, returntype, depth, docstring='', annotation=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name) or name == 'print':
@@ -156,7 +161,7 @@ def insert_function(name, args, returntype, depth, docstring='', annotation=''):
         return_docstrings = ["@rtype: None"]
     else:
         return_docstrings = [
-            "@returns: {}".format(returntype[0]),
+            "@returns: {}".format(prettify(returntype[0])),
             "@rtype: {}".format(get_native_type(returntype[1]))
         ]
 
