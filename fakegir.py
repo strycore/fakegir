@@ -84,7 +84,23 @@ def indent(lines, depth):
     return ['    ' * (depth + 1) + l for l in lines]
 
 
-def insert_function(name, args, depth, docstring=''):
+def get_returntype(element):
+    """Return the return-type of a callable"""
+    for elem_property in element:
+        tag = QName(elem_property)
+        if tag.localname == 'return-value':
+            return_doc = get_docstring(elem_property).replace("\n", " ").strip()
+            for subelem in elem_property:
+                try:
+                    subtag = QName(subelem)
+                    if subtag.localname == "type":
+                        return (return_doc, subelem.attrib['name'])
+                except KeyError:
+                    pass
+    return ("", "None")
+
+
+def insert_function(name, args, returntype, depth, docstring=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name) or name == 'print':
         name = "_" + name
@@ -102,11 +118,18 @@ def insert_function(name, args, depth, docstring=''):
         for (pname, pdoc, ptype) in args
     ]
 
+    return_docstrings = []
+    if returntype[1] == 'None':
+        return_docstrings = ["@rtype: None"]
+    else:
+        return_docstrings = ["@returns: %s" % returntype[0],
+                             "@rtype: %s" % returntype[1]]
     full_docstr = "\n".join(
         indent(chain(
             docstring.split("\n"),
             [p for p in param_docstrings if p],
             [t for t in type_docstrings if t],
+            return_docstrings,
             [""]
         ), depth)
     )
@@ -149,7 +172,11 @@ def extract_methods(class_tag):
                 method_name += "_"
             docstring = get_docstring(element)
             params = get_parameters(element)
-            methods_content += insert_function(method_name, params, 1,
+            returntype = get_returntype(element)
+            methods_content += insert_function(method_name,
+                                               params,
+                                               returntype,
+                                               1,
                                                docstring)
     return methods_content
 
@@ -218,7 +245,11 @@ def extract_namespace(namespace):
             function_name = element.attrib['name']
             docstring = get_docstring(element)
             params = get_parameters(element)
-            namespace_content += insert_function(function_name, params, 0,
+            returntype = get_returntype(element)
+            namespace_content += insert_function(function_name,
+                                                 params,
+                                                 returntype,
+                                                 0,
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
