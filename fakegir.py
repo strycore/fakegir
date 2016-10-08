@@ -9,6 +9,33 @@ GIR_PATHS = ['/usr/share/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 
+GIR_TO_NATIVE_TYPEMAP = {
+    'gboolean': 'bool',
+    'gint': 'int',
+    'guint': 'int',
+    'gint64': 'int',
+    'guint64': 'int',
+    'none': 'None',
+    'gchar': 'str',
+    'guchar': 'str',
+    'gchar*': 'str',
+    'guchar*': 'str',
+    'glong': 'long',
+    'gulong': 'long',
+    'glong64': 'long',
+    'gulong64': 'long',
+    'gfloat': 'float',
+    'gdouble': 'float',
+    'string': 'str',
+    'GString': 'str'
+}
+
+
+def get_native_type(typename):
+    """Convert a C type to a Python type"""
+    typename = typename.replace("const ", "")
+    return GIR_TO_NATIVE_TYPEMAP.get(typename, typename)
+
 
 def get_docstring(callable_tag):
     """Return docstring text for a callable"""
@@ -113,7 +140,7 @@ def insert_function(name, args, returntype, depth, docstring=''):
     ]
 
     type_docstrings = [
-        "@type %s: %s" % (pname, ptype)
+        "@type %s: %s" % (pname, get_native_type(ptype))
         if (len(ptype) > 0 and pname != "self") else ""
         for (pname, pdoc, ptype) in args
     ]
@@ -122,8 +149,11 @@ def insert_function(name, args, returntype, depth, docstring=''):
     if returntype[1] == 'None':
         return_docstrings = ["@rtype: None"]
     else:
-        return_docstrings = ["@returns: %s" % returntype[0],
-                             "@rtype: %s" % returntype[1]]
+        return_docstrings = [
+            "@returns: {}".format(returntype[0]),
+            "@rtype: {}".format(get_native_type(returntype[1]))
+        ]
+
     full_docstr = "\n".join(
         indent(chain(
             docstring.split("\n"),
