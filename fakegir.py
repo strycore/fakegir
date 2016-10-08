@@ -3,7 +3,7 @@
 import os
 import keyword
 from itertools import chain
-from lxml import etree
+from lxml.etree import QName, XML, XMLParser
 
 GIR_PATHS = ['/usr/share/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
@@ -13,7 +13,7 @@ XMLNS = "http://www.gtk.org/introspection/core/1.0"
 def get_docstring(callable_tag):
     """Return docstring text for a callable"""
     for element in callable_tag:
-        tag = etree.QName(element)
+        tag = QName(element)
         if tag.localname == 'doc':
             return element.text.replace("\\x", 'x')
     return ''
@@ -23,7 +23,7 @@ def get_parameter_type(element):
     """Returns the type of a parameter"""
     param_type = ""
     for elem_property in element:
-        tag = etree.QName(elem_property)
+        tag = QName(elem_property)
         if tag.localname == "type":
             param_type = elem_property.attrib['name']
             break
@@ -34,9 +34,16 @@ def get_parameter_doc(element):
     """Returns the doc of a parameter"""
     param_doc = ""
     for elem_property in element:
-        tag = etree.QName(elem_property)
+        tag = QName(elem_property)
         if tag.localname == "doc":
-            param_doc = element.text.replace("\\x", 'x').encode('utf-8').replace("\n", " ").strip()
+            param_doc = (
+                element
+                .text
+                .replace("\\x", 'x')
+                .encode('utf-8')
+                .replace("\n", " ")
+                .strip()
+            )
             break
 
     return param_doc
@@ -46,11 +53,11 @@ def get_parameters(element):
     """Return the parameters of a callable"""
     params = []
     for elem_property in element:
-        tag = etree.QName(elem_property)
+        tag = QName(elem_property)
         if tag.localname == 'parameters':
             for param in elem_property:
                 try:
-                    subtag = etree.QName(param)
+                    subtag = QName(param)
                     if subtag.localname == "instance-parameter":
                         param_name = 'self'
                     else:
@@ -73,7 +80,8 @@ def get_parameters(element):
 
 
 def indent(lines, depth):
-    return ['    '*(depth + 1) + l for l in lines]
+    """Return a list of lines indented by depth"""
+    return ['    ' * (depth + 1) + l for l in lines]
 
 
 def insert_function(name, args, depth, docstring=''):
@@ -82,13 +90,13 @@ def insert_function(name, args, depth, docstring=''):
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
-    epydoc_doc_strs = [
+    param_docstrings = [
         "@param %s: %s" % (pname, pdoc)
         if (len(pdoc) > 0 and pname != "self") else ""
         for (pname, pdoc, ptype) in args
     ]
 
-    epydoc_type_strs = [
+    type_docstrings = [
         "@type %s: %s" % (pname, ptype)
         if (len(ptype) > 0 and pname != "self") else ""
         for (pname, pdoc, ptype) in args
@@ -97,8 +105,8 @@ def insert_function(name, args, depth, docstring=''):
     full_docstr = "\n".join(
         indent(chain(
             docstring.split("\n"),
-            filter(lambda s: len(s) > 0, epydoc_doc_strs),
-            filter(lambda s: len(s) > 0, epydoc_type_strs),
+            [p for p in param_docstrings if p],
+            [t for t in type_docstrings if t],
             [""]
         ), depth)
     )
@@ -116,7 +124,9 @@ def insert_enum(element):
     """Returns an enum (class with attributes only) as text"""
     enum_name = element.attrib['name']
     docstring = get_docstring(element)
-    enum_content = "\n\nclass %s:\n    \"\"\"%s\"\"\"\n" % (enum_name, docstring)
+    enum_content = "\n\nclass {}:\n    \"\"\"{}\"\"\"\n".format(
+        enum_name, docstring
+    )
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
@@ -132,7 +142,7 @@ def extract_methods(class_tag):
     """Return methods from a class element"""
     methods_content = ''
     for element in class_tag:
-        tag = etree.QName(element)
+        tag = QName(element)
         if tag.localname == 'method':
             method_name = element.attrib['name']
             if method_name == 'print':
@@ -176,27 +186,32 @@ def build_classes(classes):
     return classes_text, imports
 
 
+def extract_class(element):
+    """Extract information from a class"""
+    class_name = element.attrib['name']
+    docstring = get_docstring(element)
+    parents = []
+    parent = element.attrib.get('parent')
+    if parent:
+        parents.append(parent)
+    implements = element.findall('{%s}implements' % XMLNS)
+    for implement in implements:
+        parents.append(implement.attrib['name'])
+    class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
+                     % (class_name, ", ".join(parents), docstring))
+    class_content += extract_methods(element)
+    return class_name, parents, class_content
+
+
 def extract_namespace(namespace):
     """Extract all information from a gir namespace"""
     namespace_content = ""
     classes = []
     for element in namespace:
-        tag = etree.QName(element)
+        tag = QName(element)
         tag_name = tag.localname
         if tag_name in ('class', 'interface'):
-            class_name = element.attrib['name']
-            docstring = get_docstring(element)
-            parents = []
-            parent = element.attrib.get('parent')
-            if parent:
-                parents.append(parent)
-            implements = element.findall('{%s}implements' % XMLNS)
-            for implement in implements:
-                parents.append(implement.attrib['name'])
-            class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
-                             % (class_name, ", ".join(parents), docstring))
-            class_content += extract_methods(element)
-            classes.append((class_name, parents, class_content))
+            classes.append(extract_class(element))
         if tag_name in ('enumeration', 'bitfield'):
             namespace_content += insert_enum(element)
         if tag_name == 'function':
@@ -224,9 +239,9 @@ def extract_namespace(namespace):
 def parse_gir(gir_path):
     """Extract everything from a gir file"""
     print("Parsing {}".format(gir_path))
-    parser = etree.XMLParser(encoding='utf-8', recover=True)
+    parser = XMLParser(encoding='utf-8', recover=True)
     content = open(gir_path).read()
-    root = etree.XML(content, parser)
+    root = XML(content, parser)
     namespace = root.findall('{%s}namespace' % XMLNS)[0]
     namespace_content = extract_namespace(namespace)
     return namespace_content
