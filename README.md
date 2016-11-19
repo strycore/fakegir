@@ -62,6 +62,10 @@ witnessed this script actually  working with the current version of Jedi but
 I'll leave it here in case someone manages to get something out of it. (Please
 make a Pull Request if you do).
 
+Also it's worth mentioning that `build-jedi-cache.sh` requires docopt module to
+run. On Debian/Ubuntu it is located in `python-docopt` and `python3-docopt`
+packages for Python 2 and Python 3, respectively.
+
 The other option which I use is to create a virtualenv and copy the fakegir
 gi package into it:
 
