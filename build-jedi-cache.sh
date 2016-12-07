@@ -2,6 +2,8 @@
 
 PYTHON_EXECUTABLE=python
 
+TEMPDIR=
+
 _help() {
     cat <<EOF
 Usage: $0 [options...]
@@ -11,17 +13,30 @@ Options:
     -p INTERPRETER
             Specify custom Python interpreter path
     -h      Show this help message
+    -k      Keep (do not remove) temporary files on exit
 EOF
 }
 
-while getopts '3p:h' arg; do
+_clean_up_tempdir() {
+    if [ "$TEMPDIR" ]; then
+        [ ! -d $TEMPDIR ] || rm -r $TEMPDIR \
+            || echo "Cannot remove temporary directory: $TEMPDIR" >&2
+    fi
+}
+
+_do_clean_up_tempdir=true
+
+while getopts '3p:hk' arg; do
     case "$arg" in
         3) PYTHON_EXECUTABLE=python3;;
         p) PYTHON_EXECUTABLE="$OPTARG";;
         h) _help; exit 0;;
+        k) _do_clean_up_tempdir=false;;
         *) _help >&2; exit 127;;
     esac
 done
+
+$_do_clean_up_tempdir && trap _clean_up_tempdir 0
 
 shift $(( $OPTIND - 1 ))
 
@@ -70,25 +85,28 @@ done
 #python fakegir.py
 rm -rf $HOME/.cache/jedi
 
+TEMPDIR=`mktemp -d /tmp/fakegirXXXXXXXXXX`
+echo "Temporary modules will be created in: $TEMPDIR" >&2
+
 pkgs=""
-echo "$SHEBANG" >/tmp/fakeprg.py
+echo "$SHEBANG" > $TEMPDIR/fakeprg.py
 for f in ~/.cache/fakegir/gi/repository/*.py; do
     pkgname=`basename $f | cut -d . -f 1`
     pkgs="$pkgs $pkgname"
-    echo "from gi.repository import $pkgname" >> /tmp/fakeprg.py
+    echo "from gi.repository import $pkgname" >> $TEMPDIR/fakeprg.py
 done
 
 
 for pkgname in $pkgs; do
     echo Forcing cache for $pkgname
-    cp /tmp/fakeprg.py /tmp/${pkgname}-fakeprg.py
+    cp $TEMPDIR/fakeprg.py $TEMPDIR/${pkgname}-fakeprg.py
     compl="w = ${pkgname}."
-    echo "$compl"  >> /tmp/${pkgname}-fakeprg.py
-    fakeprg_lines=`wc -l /tmp/${pkgname}-fakeprg.py| cut -d ' ' -f 1`
+    echo "$compl"  >> $TEMPDIR/${pkgname}-fakeprg.py
+    fakeprg_lines=`wc -l $TEMPDIR/${pkgname}-fakeprg.py| cut -d ' ' -f 1`
     compl_col=${#compl}
 
     export PYTHONPATH=$HOME/.cache/fakegir
     pushd $JEDI_PATH
     $PYTHON_EXECUTABLE $JEDI_PATH/sith.py \
-        -f run completions /tmp/${pkgname}-fakeprg.py $fakeprg_lines $compl_col
+        -f run completions $TEMPDIR/${pkgname}-fakeprg.py $fakeprg_lines $compl_col
 done
