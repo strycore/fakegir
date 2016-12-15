@@ -72,7 +72,8 @@ JEDI_PATH=
 
 for _p in \
     $VIM_PLUGINS_DIR/YouCompleteMe/third_party/ycmd/third_party/jedi \
-    $VIM_PLUGINS_DIR/YouCompleteMe/third_party/ycmd/third_party/JediHTTP/vendor/jedi
+    $VIM_PLUGINS_DIR/YouCompleteMe/third_party/ycmd/third_party/JediHTTP/vendor/jedi \
+    $VIM_PLUGINS_DIR/jedi-vim/jedi
 do
     if [ -d "$_p" ]; then
         JEDI_PATH=$_p
