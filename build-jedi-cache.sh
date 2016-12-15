@@ -110,4 +110,5 @@ for pkgname in $pkgs; do
     pushd $JEDI_PATH
     $PYTHON_EXECUTABLE $JEDI_PATH/sith.py \
         -f run completions $TEMPDIR/${pkgname}-fakeprg.py $fakeprg_lines $compl_col
+    popd
 done
