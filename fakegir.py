@@ -9,6 +9,7 @@ from lxml.etree import QName, XML, XMLParser
 GIR_PATHS = ['/usr/share/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
+ADD_DOCSTRINGS = 'NODOCS' not in os.environ
 
 GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',
@@ -41,13 +42,11 @@ def get_native_type(typename):
 
 def get_docstring(callable_tag):
     """Return docstring text for a callable"""
-    if os.environ.get('NODOCS'):
-        return ''
-
-    for element in callable_tag:
-        tag = QName(element)
-        if tag.localname == 'doc':
-            return element.text.replace("\\x", 'x')
+    if ADD_DOCSTRINGS:
+        for element in callable_tag:
+            tag = QName(element)
+            if tag.localname == 'doc':
+                return element.text.replace("\\x", 'x')
     return ''
 
 
@@ -65,18 +64,19 @@ def get_parameter_type(element):
 def get_parameter_doc(element):
     """Returns the doc of a parameter"""
     param_doc = ""
-    for elem_property in element:
-        tag = QName(elem_property)
-        if tag.localname == "doc":
-            param_doc = (
-                element
-                .text
-                .replace("\\x", 'x')
-                .encode('utf-8')
-                .replace("\n", " ")
-                .strip()
-            )
-            break
+    if ADD_DOCSTRINGS:
+        for elem_property in element:
+            tag = QName(elem_property)
+            if tag.localname == "doc":
+                param_doc = (
+                    element
+                    .text
+                    .replace("\\x", 'x')
+                    .encode('utf-8')
+                    .replace("\n", " ")
+                    .strip()
+                )
+                break
 
     return param_doc
 
@@ -147,36 +147,38 @@ def insert_function(name, args, returntype, depth, docstring='', annotation=''):
         name = "_" + name
     arglist = ", ".join([arg[0] for arg in args])
 
-    param_docstrings = [
-        "@param {}: {}".format(pname, make_safe(pdoc))
-        if (len(pdoc) > 0 and pname != "self") else ""
-        for (pname, pdoc, ptype) in args
-    ]
-
-    type_docstrings = [
-        "@type %s: %s" % (pname, get_native_type(ptype))
-        if (len(ptype) > 0 and pname != "self") else ""
-        for (pname, pdoc, ptype) in args
-    ]
-
-    return_docstrings = []
-    if returntype[1] == 'None':
-        return_docstrings = ["@rtype: None"]
-    else:
-        return_docstrings = [
-            "@returns: {}".format(prettify(returntype[0])),
-            "@rtype: {}".format(get_native_type(returntype[1]))
+    full_docstrings = ""
+    if ADD_DOCSTRINGS:
+        param_docstrings = [
+            "@param {}: {}".format(pname, make_safe(pdoc))
+            if (len(pdoc) > 0 and pname != "self") else ""
+            for (pname, pdoc, ptype) in args
         ]
 
-    full_docstrings = "\n".join(
-        indent(chain(
-            docstring.split("\n"),
-            [p for p in param_docstrings if p],
-            [t for t in type_docstrings if t],
-            return_docstrings,
-            [""]
-        ), depth)
-    )
+        type_docstrings = [
+            "@type %s: %s" % (pname, get_native_type(ptype))
+            if (len(ptype) > 0 and pname != "self") else ""
+            for (pname, pdoc, ptype) in args
+        ]
+
+        return_docstrings = []
+        if returntype[1] == 'None':
+            return_docstrings = ["@rtype: None"]
+        else:
+            return_docstrings = [
+                "@returns: {}".format(prettify(returntype[0])),
+                "@rtype: {}".format(get_native_type(returntype[1]))
+            ]
+
+        full_docstrings = "\n".join(
+            indent(chain(
+                docstring.split("\n"),
+                [p for p in param_docstrings if p],
+                [t for t in type_docstrings if t],
+                return_docstrings,
+                [""]
+            ), depth)
+        )
 
     return "\n%s\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
         '    ' * depth + annotation,
