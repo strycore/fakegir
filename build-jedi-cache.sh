@@ -107,8 +107,8 @@ for pkgname in $pkgs; do
     compl_col=${#compl}
 
     export PYTHONPATH=$HOME/.cache/fakegir
-    pushd $JEDI_PATH
+    pushd $JEDI_PATH > /dev/null
     $PYTHON_EXECUTABLE $JEDI_PATH/sith.py \
         -f run completions $TEMPDIR/${pkgname}-fakeprg.py $fakeprg_lines $compl_col
-    popd
+    popd > /dev/null
 done
