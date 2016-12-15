@@ -5,8 +5,9 @@ import re
 import keyword
 from itertools import chain
 from lxml.etree import QName, XML, XMLParser
+import glob
 
-GIR_PATHS = ['/usr/share/gir-1.0/']
+GIR_PATHS = ['/usr/share/gir-1.0/', '/usr/share/*/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 ADD_DOCSTRINGS = 'NODOCS' not in os.environ
@@ -359,7 +360,10 @@ def parse_gir(gir_path):
 
 def iter_girs():
     """Return a generator of all available gir files"""
+    gir_paths = []
     for gir_path in GIR_PATHS:
+        gir_paths.extend(glob.glob(gir_path))
+    for gir_path in gir_paths:
         for gir_file in os.listdir(gir_path):
             # Don't know what to do with those, guess nobody uses PyGObject
             # for Gtk 2.0 anyway
