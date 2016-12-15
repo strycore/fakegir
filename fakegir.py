@@ -41,6 +41,9 @@ def get_native_type(typename):
 
 def get_docstring(callable_tag):
     """Return docstring text for a callable"""
+    if os.environ.get('NODOCS'):
+        return ''
+
     for element in callable_tag:
         tag = QName(element)
         if tag.localname == 'doc':

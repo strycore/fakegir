@@ -31,12 +31,18 @@ If you want autocompletion for additional packages, you can find it with apt-fil
 Usage
 -----
 
-* python fakegir.py
+* ./fakegir.py
 * Add ~/.cache/fakegir/ to the PYTHONPATH of your favorite editor
 * ????
 * Profit !
 
 Don't forget to run fakegir when you install new gir files or upgrade your distro.
+
+Depending on your editor, it is highly recommended that you build fakegir
+modules without the docstrings which can make autocompletion much slower or
+even freeze your computer::
+
+    NODOCS=1 ./fakegir.py
 
 Vim support
 -----------
@@ -58,7 +64,7 @@ A lot of Vim users use YouCompleteMe for autocompletion which itself uses Jedi
 for Python completion. Getting Fakegir to work with a bit trickier. The first
 option is to run the provided script `build-jedi-cache.sh`. This script is
 from a fork of Fakegir on github I merged back into my branch. I haven't
-witnessed this script actually  working with the current version of Jedi but 
+witnessed this script actually  working with the current version of Jedi but
 I'll leave it here in case someone manages to get something out of it. (Please
 make a Pull Request if you do).
 
