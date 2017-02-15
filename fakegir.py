@@ -10,7 +10,7 @@ import glob
 GIR_PATHS = ['/usr/share/gir-1.0/', '/usr/share/*/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
-ADD_DOCSTRINGS = 'NODOCS' not in os.environ
+ADD_DOCSTRINGS = 'WITHDOCS' in os.environ
 
 GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',

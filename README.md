@@ -40,9 +40,10 @@ Don't forget to run fakegir when you install new gir files or upgrade your distr
 
 Depending on your editor, it is highly recommended that you build fakegir
 modules without the docstrings which can make autocompletion much slower or
-even freeze your computer::
+even freeze your computer, with you still with to build fakegir with docstrings
+you can run it with the WITHDOCS variable::
 
-    NODOCS=1 ./fakegir.py
+    WITHDOCS=1 ./fakegir.py
 
 Vim support
 -----------
