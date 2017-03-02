@@ -6,6 +6,7 @@ import keyword
 from itertools import chain
 from lxml.etree import QName, XML, XMLParser
 import glob
+import sys
 
 GIR_PATHS = ['/usr/share/gir-1.0/', '/usr/share/*/gir-1.0/']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
@@ -33,6 +34,17 @@ GIR_TO_NATIVE_TYPEMAP = {
     'GString': 'str',
     'utf8': 'str',
 }
+
+def write_stderr(message, *args, **kwargs):
+    """Write a message to standard error stream.
+        If any extra positional or keyword arguments
+        are given, call format() on the message
+        with these arguments."""
+
+    if len(args) > 0 or len(kwargs) > 0:
+        message = message.format(*args, **kwargs)
+
+    sys.stderr.write(message + "\n")
 
 
 def get_native_type(typename):
@@ -369,7 +381,15 @@ def iter_girs():
             # for Gtk 2.0 anyway
             if gir_file in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
                 continue
-            module_name = gir_file[:gir_file.index('-')]
+
+            try:
+                module_name = gir_file[:gir_file.index('-')]
+
+            except ValueError as e:
+                # file name contains no dashes
+                write_stderr("Warning: unrecognized file in gir directory: {}", gir_file)
+                continue
+
             gir_info = (module_name, gir_file, gir_path)
             yield gir_info
 
