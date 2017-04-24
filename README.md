@@ -1,5 +1,5 @@
 Fakegir: Bring autocompletion to your PyGObject code!
------------------------------------------------------
+=====================================================
 
 fakegir is a tool to build a fake python package of PyGObject modules.
 
@@ -44,6 +44,11 @@ even freeze your computer, with you still with to build fakegir with docstrings
 you can run it with the WITHDOCS variable::
 
     WITHDOCS=1 ./fakegir.py
+
+Gedit support
+-------------
+
+You can use Gedit Fakegir Loader by @arphenius : https://github.com/arphenius/gedit-fakegir-loader
 
 Vim support
 -----------
