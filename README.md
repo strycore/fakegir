@@ -50,6 +50,16 @@ Gedit support
 
 You can use Gedit Fakegir Loader by @arphenius : https://github.com/arphenius/gedit-fakegir-loader
 
+VS Code Support
+---------------
+
+You can add extra paths for jedi with this setting:
+
+    "python.autoComplete.extraPaths": [
+         "/home/USERNAME/.cache/fakegir/"
+    ]
+
+
 Vim support
 -----------
 
