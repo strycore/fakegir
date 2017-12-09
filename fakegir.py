@@ -8,7 +8,7 @@ from lxml.etree import QName, XML, XMLParser
 import glob
 import sys
 
-GIR_PATHS = ['/usr/share/gir-1.0/', '/usr/share/*/gir-1.0/']
+GIR_PATHS = ['/usr/share/gir-1.0/*.gir', '/usr/share/*/gir-1.0/*.gir']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 ADD_DOCSTRINGS = 'WITHDOCS' in os.environ
@@ -372,26 +372,27 @@ def parse_gir(gir_path):
 
 def iter_girs():
     """Return a generator of all available gir files"""
-    gir_paths = []
+    gir_files = []
     for gir_path in GIR_PATHS:
-        gir_paths.extend(glob.glob(gir_path))
-    for gir_path in gir_paths:
-        for gir_file in os.listdir(gir_path):
-            # Don't know what to do with those, guess nobody uses PyGObject
-            # for Gtk 2.0 anyway
-            if gir_file in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
-                continue
+        gir_files.extend(glob.glob(gir_path))
 
-            try:
-                module_name = gir_file[:gir_file.index('-')]
+    for gir_file in gir_files:
+        # Don't know what to do with those, guess nobody uses PyGObject
+        # for Gtk 2.0 anyway
+        basename = os.path.basename(gir_file)
+        if basename in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
+            continue
 
-            except ValueError as e:
-                # file name contains no dashes
-                write_stderr("Warning: unrecognized file in gir directory: {}", gir_file)
-                continue
+        try:
+            module_name = basename[:basename.index('-')]
 
-            gir_info = (module_name, gir_file, gir_path)
-            yield gir_info
+        except ValueError as e:
+            # file name contains no dashes
+            write_stderr("Warning: unrecognized file in gir directory: {}", gir_file)
+            continue
+
+        gir_info = (module_name, gir_file)
+        yield gir_info
 
 
 def generate_fakegir():
@@ -407,8 +408,7 @@ def generate_fakegir():
     with open(repo_init_path, 'w') as repo_init_file:
         repo_init_file.write('')
 
-    for module_name, gir_file, gir_path in iter_girs():
-        gir_path = os.path.join(gir_path, gir_file)
+    for module_name, gir_path in iter_girs():
         fakegir_content = parse_gir(gir_path)
         fakegir_path = os.path.join(FAKEGIR_PATH, 'gi/repository',
                                     module_name + ".py")
