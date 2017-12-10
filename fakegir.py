@@ -363,7 +363,8 @@ def parse_gir(gir_path):
     """Extract everything from a gir file"""
     print("Parsing {}".format(gir_path))
     parser = XMLParser(encoding='utf-8', recover=True)
-    content = open(gir_path).read()
+    with open(gir_path, 'rt', encoding='utf-8') as fd:
+        content = fd.read()
     root = XML(content, parser)
     namespace = root.findall('{%s}namespace' % XMLNS)[0]
     namespace_content = extract_namespace(namespace)
