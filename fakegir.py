@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Build a fake python package from the information found in gir files"""
+import glob
+import keyword
 import os
 import re
-import keyword
-from itertools import chain
-from lxml.etree import QName, XML, XMLParser
-import glob
 import sys
+from itertools import chain
+
+from lxml.etree import XML, QName, XMLParser
 
 GIR_PATHS = ['/usr/share/gir-1.0/*.gir', '/usr/share/*/gir-1.0/*.gir']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
@@ -35,13 +36,14 @@ GIR_TO_NATIVE_TYPEMAP = {
     'utf8': 'str',
 }
 
+
 def write_stderr(message, *args, **kwargs):
     """Write a message to standard error stream.
         If any extra positional or keyword arguments
         are given, call format() on the message
         with these arguments."""
 
-    if len(args) > 0 or len(kwargs) > 0:
+    if args or kwargs:
         message = message.format(*args, **kwargs)
 
     sys.stderr.write(message + "\n")
@@ -164,13 +166,13 @@ def insert_function(name, args, returntype, depth, docstring='', annotation=''):
     if ADD_DOCSTRINGS:
         param_docstrings = [
             "@param {}: {}".format(pname, make_safe(pdoc))
-            if (len(pdoc) > 0 and pname != "self") else ""
+            if (pdoc and pname != "self") else ""
             for (pname, pdoc, ptype) in args
         ]
 
         type_docstrings = [
             "@type %s: %s" % (pname, get_native_type(ptype))
-            if (len(ptype) > 0 and pname != "self") else ""
+            if (ptype and pname != "self") else ""
             for (pname, pdoc, ptype) in args
         ]
 
@@ -213,9 +215,9 @@ def insert_enum(element):
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
-        if len(enum_name) == 0:
+        if not enum_name == 0:
             enum_name = "_"
-        if len(enum_name) and enum_name[0].isdigit():
+        if enum_name and enum_name[0].isdigit():
             enum_name = '_' + enum_name
         enum_value = member.attrib['value']
         enum_value = enum_value.replace('\\', '\\\\')
@@ -363,8 +365,8 @@ def parse_gir(gir_path):
     """Extract everything from a gir file"""
     print("Parsing {}".format(gir_path))
     parser = XMLParser(encoding='utf-8', recover=True)
-    with open(gir_path, 'rt', encoding='utf-8') as fd:
-        content = fd.read()
+    with open(gir_path, 'rt', encoding='utf-8') as gir_file:
+        content = gir_file.read()
     root = XML(content, parser)
     namespace = root.findall('{%s}namespace' % XMLNS)[0]
     namespace_content = extract_namespace(namespace)
@@ -387,7 +389,7 @@ def iter_girs():
         try:
             module_name = basename[:basename.index('-')]
 
-        except ValueError as e:
+        except ValueError:
             # file name contains no dashes
             write_stderr("Warning: unrecognized file in gir directory: {}", gir_file)
             continue
@@ -416,6 +418,7 @@ def generate_fakegir():
         with open(fakegir_path, 'w') as fakegir_file:
             fakegir_file.write("# -*- coding: utf-8 -*-\n")
             fakegir_file.write(fakegir_content)
+
 
 if __name__ == "__main__":
     generate_fakegir()
