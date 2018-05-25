@@ -215,7 +215,7 @@ def insert_enum(element):
     members = element.findall("{%s}member" % XMLNS)
     for member in members:
         enum_name = member.attrib['name']
-        if not enum_name == 0:
+        if not enum_name:
             enum_name = "_"
         if enum_name and enum_name[0].isdigit():
             enum_name = '_' + enum_name
@@ -345,7 +345,7 @@ def extract_namespace(namespace):
                                                  docstring)
         if tag_name == 'constant':
             constant_name = element.attrib['name']
-            if constant_name[0].isdigit:
+            if constant_name[0].isdigit():
                 constant_name = "_" + constant_name
             constant_value = element.attrib['value'] or 'None'
             constant_value = constant_value.replace("\\", "\\\\")
@@ -355,7 +355,7 @@ def extract_namespace(namespace):
     namespace_content += classes_content
     imports_text = ""
     for _import in imports:
-        imports_text += "from . import %s\n" % _import
+        imports_text += "from gi.repository import %s\n" % _import
 
     namespace_content = imports_text + namespace_content
     return namespace_content
