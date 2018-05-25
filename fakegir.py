@@ -355,7 +355,7 @@ def extract_namespace(namespace):
     namespace_content += classes_content
     imports_text = ""
     for _import in imports:
-        imports_text += "import %s\n" % _import
+        imports_text += "from . import %s\n" % _import
 
     namespace_content = imports_text + namespace_content
     return namespace_content
