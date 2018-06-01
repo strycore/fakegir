@@ -205,14 +205,15 @@ def insert_function(name, parameters, returntype, depth, docstring='', annotatio
                 [""]
             ), depth)
         )
-
-    return "%s\n%sdef %s(%s):\n%s\"\"\"%s\"\"\"\n" % (
-        '    ' * depth + annotation,
-        '    ' * depth,
+    indent_level = '    ' * depth
+    return "%s\n%sdef %s(%s):\n%s    \"\"\"%s\"\"\"\n%s    return True\n" % (
+        indent_level + annotation,
+        indent_level,
         name,
         arglist,
-        '    ' * (depth + 1),
-        full_docstrings
+        indent_level,
+        full_docstrings,
+        indent_level
     )
 
 
