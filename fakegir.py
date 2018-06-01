@@ -5,10 +5,12 @@ import keyword
 import os
 import re
 import sys
+import logging
 from itertools import chain
 
 from lxml.etree import XML, QName, XMLParser
 
+LOGGER = logging.getLogger(__name__)
 GIR_PATHS = ['/usr/share/gir-1.0/*.gir', '/usr/share/*/gir-1.0/*.gir']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
@@ -103,26 +105,26 @@ def get_parameters(element):
         tag = QName(elem_property)
         if tag.localname == 'parameters':
             for param in elem_property:
-                try:
-                    subtag = QName(param)
-                    if subtag.localname == "instance-parameter":
-                        param_name = 'self'
-                    else:
+                subtag = QName(param)
+                if subtag.localname == "instance-parameter":
+                    param_name = 'self'
+                else:
+                    try:
                         param_name = param.attrib['name']
+                    except KeyError:
+                        continue
 
-                    param_type = get_parameter_type(param)
-                    param_doc = get_docstring(param).replace("\n", " ").strip()
+                param_type = get_parameter_type(param)
+                param_doc = get_docstring(param).replace("\n", " ").strip()
 
-                    if keyword.iskeyword(param_name):
-                        param_name = "_" + param_name
+                if keyword.iskeyword(param_name):
+                    param_name = "_" + param_name
 
-                    if param_name == '...':
-                        param_name = '*args'
+                if param_name == '...':
+                    param_name = '*args'
 
-                    if param_name not in params:
-                        params.append((param_name, param_doc, param_type))
-                except KeyError:
-                    pass
+                if param_name not in [p[0] for p in params]:
+                    params.append((param_name, param_doc, param_type))
     return params
 
 
@@ -156,24 +158,33 @@ def prettify(string):
     return re.sub(r"([\s]{3,80})", r"\n\1", string)
 
 
-def insert_function(name, args, returntype, depth, docstring='', annotation=''):
+def insert_function(name, parameters, returntype, depth, docstring='', annotation=''):
     """Returns a function as a string"""
     if keyword.iskeyword(name) or name == 'print':
         name = "_" + name
-    arglist = ", ".join([arg[0] for arg in args])
+
+    function_params = []
+    for parameter in parameters:
+        parameter_name = parameter[0]
+        if not parameter_name.startswith('*') and parameter_name != 'self':
+            function_params.append('%s=None' % parameter_name)
+        else:
+            function_params.append(parameter_name)
+
+    arglist = ", ".join([p for p in function_params])
 
     full_docstrings = ""
     if ADD_DOCSTRINGS:
         param_docstrings = [
             "@param {}: {}".format(pname, make_safe(pdoc))
             if (pdoc and pname != "self") else ""
-            for (pname, pdoc, ptype) in args
+            for (pname, pdoc, ptype) in parameters
         ]
 
         type_docstrings = [
             "@type %s: %s" % (pname, get_native_type(ptype))
             if (ptype and pname != "self") else ""
-            for (pname, pdoc, ptype) in args
+            for (pname, pdoc, ptype) in parameters
         ]
 
         return_docstrings = []
@@ -195,7 +206,7 @@ def insert_function(name, args, returntype, depth, docstring='', annotation=''):
             ), depth)
         )
 
-    return "\n%s\n%sdef %s(%s):\n%s\"\"\"\n%s\"\"\"\n" % (
+    return "%s\n%sdef %s(%s):\n%s\"\"\"%s\"\"\"\n" % (
         '    ' * depth + annotation,
         '    ' * depth,
         name,
@@ -315,7 +326,7 @@ def extract_class(element):
     implements = element.findall('{%s}implements' % XMLNS)
     for implement in implements:
         parents.append(implement.attrib['name'])
-    class_content = ("\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
+    class_content = ("\n\nclass %s(%s):\n    \"\"\"%s\"\"\"\n"
                      % (class_name, ", ".join(parents), docstring))
     class_content += extract_constructors(element)
     class_content += extract_methods(element)
@@ -334,15 +345,13 @@ def extract_namespace(namespace):
         if tag_name in ('enumeration', 'bitfield'):
             namespace_content += insert_enum(element)
         if tag_name == 'function':
-            function_name = element.attrib['name']
-            docstring = get_docstring(element)
-            params = get_parameters(element)
-            returntype = get_returntype(element)
-            namespace_content += insert_function(function_name,
-                                                 params,
-                                                 returntype,
-                                                 0,
-                                                 docstring)
+            namespace_content += insert_function(
+                element.attrib['name'],
+                get_parameters(element),
+                get_returntype(element),
+                0,
+                get_docstring(element)
+            )
         if tag_name == 'constant':
             constant_name = element.attrib['name']
             if constant_name[0].isdigit():
