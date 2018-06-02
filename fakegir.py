@@ -206,7 +206,7 @@ def insert_function(name, parameters, returntype, depth, docstring='', annotatio
             ), depth)
         )
     indent_level = '    ' * depth
-    return "%s\n%sdef %s(%s):\n%s    \"\"\"%s\"\"\"\n%s    return True\n" % (
+    return "%s\n%sdef %s(%s):\n%s    \"\"\"%s\"\"\"\n%s    return object\n" % (
         indent_level + annotation,
         indent_level,
         name,
