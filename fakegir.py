@@ -152,7 +152,13 @@ def get_returntype(element):
                 try:
                     subtag = QName(subelem)
                     if subtag.localname == "type":
-                        return (return_doc, subelem.attrib['name'])
+                        try:
+                            return_type = subelem.attrib['name']
+                        except KeyError:
+                            return_type = 'object'
+
+                        return (return_doc, return_type)
+
                 except KeyError:
                     pass
     return ("", "None")
