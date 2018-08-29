@@ -73,7 +73,11 @@ def get_parameter_type(element):
     for elem_property in element:
         tag = QName(elem_property)
         if tag.localname == "type":
-            param_type = elem_property.attrib['name']
+            try:
+                param_type = elem_property.attrib['name']
+            except KeyError:
+                param_type = 'object'
+
             break
     return param_type
 
@@ -148,7 +152,13 @@ def get_returntype(element):
                 try:
                     subtag = QName(subelem)
                     if subtag.localname == "type":
-                        return (return_doc, subelem.attrib['name'])
+                        try:
+                            return_type = subelem.attrib['name']
+                        except KeyError:
+                            return_type = 'object'
+
+                        return (return_doc, return_type)
+
                 except KeyError:
                     pass
     return ("", "None")
