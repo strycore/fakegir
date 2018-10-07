@@ -48,7 +48,7 @@ you can run it with the WITHDOCS variable::
 Gedit support
 -------------
 
-You can use Gedit Fakegir Loader by @arphenius : https://github.com/arphenius/gedit-fakegir-loader
+You can use Gedit Fakegir Loader by @gabrieltigre : https://github.com/gabrieltigre/gedit-fakegir-loader
 
 VS Code Support
 ---------------
