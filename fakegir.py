@@ -351,7 +351,7 @@ def extract_namespace(namespace):
     for element in namespace:
         tag = QName(element)
         tag_name = tag.localname
-        if tag_name in ('class', 'interface'):
+        if tag_name in ('class', 'interface', 'record'):
             classes.append(extract_class(element))
         if tag_name in ('enumeration', 'bitfield'):
             namespace_content += insert_enum(element)
