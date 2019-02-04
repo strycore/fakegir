@@ -252,18 +252,20 @@ def extract_methods(class_tag):
     methods_content = ''
     for element in class_tag:
         tag = QName(element)
-        if tag.localname in ('method', 'virtual-method'):
+        if tag.localname in ('function', 'method', 'virtual-method'):
             method_name = element.attrib['name']
             if method_name == 'print':
                 method_name += "_"
             docstring = get_docstring(element)
             params = get_parameters(element)
+            annotation = "" if any(p[0] == "self" for p in params) else "@staticmethod"
             returntype = get_returntype(element)
             methods_content += insert_function(method_name,
                                                params,
                                                returntype,
                                                1,
-                                               docstring)
+                                               docstring,
+                                               annotation)
     return methods_content
 
 
