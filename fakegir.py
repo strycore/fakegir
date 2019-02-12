@@ -6,12 +6,12 @@ import os
 import re
 import sys
 import logging
+import subprocess
 from itertools import chain
 
 from lxml.etree import XML, QName, XMLParser
 
 LOGGER = logging.getLogger(__name__)
-GIR_PATHS = ['/usr/share/gir-1.0/*.gir', '/usr/share/*/gir-1.0/*.gir']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 ADD_DOCSTRINGS = 'WITHDOCS' in os.environ
@@ -38,6 +38,36 @@ GIR_TO_NATIVE_TYPEMAP = {
     'utf8': 'str',
 }
 
+def pkg_config(*args):
+    result = subprocess.run(("pkg-config",) + args, capture_output = True,
+            shell = False, check = False)
+    return result.stdout.strip().decode(sys.stdout.encoding)
+
+def pkg_config_gi_var(var):
+    return pkg_config("--variable=" + var, "gobject-introspection-1.0")
+
+def get_gir_globs():
+    # See https://github.com/strycore/fakegir/issues/15#issuecomment-462843007
+    datadir = pkg_config_gi_var("datadir")
+    girdir = pkg_config_gi_var("girdir")
+    dds = datadir + os.path.sep
+    if girdir.startswith(dds):
+        girdir = girdir.replace(dds, "")
+    else:
+        girdir = os.path.basename(girdir)
+    dataleaf = os.path.basename(datadir)
+    datadir = os.path.dirname(datadir)
+    if datadir.startswith("/usr/local"):
+        datadir = "/usr/local"
+    elif datadir.startswith("/usr"):
+        datadir = "/usr"
+    elif datadir.startswith("/opt"):
+        datadir = "/opt"
+    return [os.path.join(datadir, dataleaf, girdir, "*.gir"),
+            os.path.join(datadir, dataleaf, "*", girdir, "*.gir")]
+
+
+GIR_GLOBS = get_gir_globs()
 
 def write_stderr(message, *args, **kwargs):
     """Write a message to standard error stream.
@@ -398,7 +428,7 @@ def parse_gir(gir_path):
 def iter_girs():
     """Return a generator of all available gir files"""
     gir_files = []
-    for gir_path in GIR_PATHS:
+    for gir_path in GIR_GLOBS:
         gir_files.extend(glob.glob(gir_path))
 
     for gir_file in gir_files:
