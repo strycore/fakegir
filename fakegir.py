@@ -303,8 +303,8 @@ def extract_fields(record_tag):
         tag = QName(element)
         if tag.localname == "field":
             field_name = element.attrib['name']
-            fields_content += "    @property\n    def %s(self):\n" + \
-                    "        return object\n\n" % field_name
+            fields_content += "    @property\n    def %s(self):\n" \
+                    % field_name + "        return object\n\n"
     return fields_content
 
 
