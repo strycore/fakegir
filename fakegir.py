@@ -66,7 +66,6 @@ def get_gir_globs():
     return [os.path.join(datadir, dataleaf, girdir, "*.gir"),
             os.path.join(datadir, dataleaf, "*", girdir, "*.gir")]
 
-
 GIR_GLOBS = get_gir_globs()
 
 def write_stderr(message, *args, **kwargs):
