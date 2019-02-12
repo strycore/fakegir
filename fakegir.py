@@ -298,6 +298,17 @@ def extract_methods(class_tag):
     return methods_content
 
 
+def extract_fields(class_tag):
+    """Return fields from a record element"""
+    fields_content = ''
+    for element in class_tag:
+        tag = QName(element)
+        if tag.localname == "field":
+            field_name = element.attrib['name']
+            fields_content += "    @property\n    def %s(self):\n    return object\n\n"
+    return fields_content
+
+
 def extract_constructors(class_tag):
     """return the constructor methods for this class"""
     class_name = class_tag.attrib["name"]
@@ -372,6 +383,7 @@ def extract_class(element):
                      % (class_name, ", ".join(parents), docstring))
     class_content += extract_constructors(element)
     class_content += extract_methods(element)
+    class_content += extract_fields(element)
     return class_name, parents, class_content
 
 
