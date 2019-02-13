@@ -446,7 +446,8 @@ def generate_fakegir():
 
     gi_init_path = os.path.join(FAKEGIR_PATH, 'gi/__init__.py')
     with open(gi_init_path, 'w') as gi_init_file:
-        gi_init_file.write('')
+        gi_init_file.write('def require_version(namespace, version):\n')
+        gi_init_file.write('    pass\n')
     repo_init_path = os.path.join(FAKEGIR_PATH, 'gi/repository/__init__.py')
     with open(repo_init_path, 'w') as repo_init_file:
         repo_init_file.write('')
