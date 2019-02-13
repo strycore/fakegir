@@ -301,6 +301,18 @@ def extract_constructors(class_tag):
     return methods_content
 
 
+def extract_fields(record_tag):
+    """Return fields from a record element"""
+    fields_content = ''
+    for element in record_tag:
+        tag = QName(element)
+        if tag.localname == "field":
+            field_name = element.attrib['name']
+            fields_content += "\n    @property\n    def %s(self):\n" \
+                    % field_name + "        return object\n"
+    return fields_content
+
+
 def build_classes(classes):
     """Order classes with correct dependency order
     also return external imports
@@ -348,6 +360,7 @@ def extract_class(element):
                      % (class_name, ", ".join(parents), docstring))
     class_content += extract_constructors(element)
     class_content += extract_methods(element)
+    class_content += extract_fields(element)
     return class_name, parents, class_content
 
 
