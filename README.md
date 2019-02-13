@@ -45,6 +45,10 @@ you can run it with the WITHDOCS variable::
 
     WITHDOCS=1 ./fakegir.py
 
+By default fakegir scans /usr/share/gir-1.0 for gir files. You can override this
+by setting a GIRPATH environment variable. You can set more than one directory,
+separated by colons.
+
 Gedit support
 -------------
 
