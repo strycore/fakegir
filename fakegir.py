@@ -11,10 +11,15 @@ from itertools import chain
 from lxml.etree import XML, QName, XMLParser
 
 LOGGER = logging.getLogger(__name__)
-GIR_PATHS = ['/usr/share/gir-1.0/*.gir', '/usr/share/*/gir-1.0/*.gir']
 FAKEGIR_PATH = os.path.expanduser('~/.cache/fakegir')
 XMLNS = "http://www.gtk.org/introspection/core/1.0"
 ADD_DOCSTRINGS = 'WITHDOCS' in os.environ
+
+GIR_PATHS = os.environ.get("GIRPATH")
+if GIR_PATHS and len(GIR_PATHS):
+    GIR_PATHS = GIR_PATHS.split(':')
+else:
+    GIR_PATHS = ['/usr/share/gir-1.0']
 
 GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',
@@ -399,7 +404,7 @@ def iter_girs():
     """Return a generator of all available gir files"""
     gir_files = []
     for gir_path in GIR_PATHS:
-        gir_files.extend(glob.glob(gir_path))
+        gir_files.extend(glob.glob(os.path.join(gir_path, '*.gir')))
 
     for gir_file in gir_files:
         # Don't know what to do with those, guess nobody uses PyGObject
