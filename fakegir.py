@@ -43,7 +43,6 @@ GIR_TO_NATIVE_TYPEMAP = {
     'utf8': 'str',
 }
 
-
 def write_stderr(message, *args, **kwargs):
     """Write a message to standard error stream.
         If any extra positional or keyword arguments
@@ -248,7 +247,7 @@ def insert_enum(element):
             enum_name = '_' + enum_name
         enum_value = member.attrib['value']
         enum_value = enum_value.replace('\\', '\\\\')
-        enum_content += "    %s = '%s'\n" % (enum_name.upper(), enum_value)
+        enum_content += "    %s = %s\n" % (enum_name.upper(), enum_value)
     return enum_content
 
 
