@@ -25,6 +25,12 @@ GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',
     'gint': 'int',
     'guint': 'int',
+    'gint8': 'int',
+    'guint8': 'int',
+    'gint16': 'int',
+    'guint16': 'int',
+    'gint32': 'int',
+    'guint32': 'int',
     'gint64': 'int',
     'guint64': 'int',
     'none': 'None',
@@ -386,10 +392,36 @@ def extract_namespace(namespace):
             constant_name = element.attrib['name']
             if constant_name[0].isdigit():
                 constant_name = "_" + constant_name
-            constant_value = element.attrib['value'] or 'None'
-            constant_value = constant_value.replace("\\", "\\\\")
-            namespace_content += "{} = r\"\"\"{}\"\"\"\n".format(constant_name,
-                                                                 constant_value)
+
+            constant_value = element.attrib['value']
+
+            if constant_value is None:
+                constant_value = 'None'
+
+            else:
+                quote_string = True
+
+                type_tag = element.find('{%s}type' % XMLNS)
+                if type_tag is not None:
+                    constant_type = GIR_TO_NATIVE_TYPEMAP.get(type_tag.attrib['name'] or 'utf8', 'str')
+
+                    if (constant_type == 'int' or constant_type == 'long'):
+                        if re.match('^-?[0-9]+$', constant_value):
+                            quote_string = False
+                    elif constant_type == 'float':
+                        if re.match(r'^-?[0-9]+(?:\.[0-9]+)?$', constant_value):
+                            quote_string = False
+                    elif constant_type == 'bool':
+                        if re.match('^(?:true|false)$', constant_value, re.I):
+                            constant_value = constant_value.capitalize()
+                            quote_string = False
+
+                    if quote_string:
+                        constant_value = constant_value.replace("\\", "\\\\")
+                        constant_value = r'r"""{}"""'.format(constant_value)
+
+            namespace_content += "{} = {}\n".format(constant_name, constant_value)
+
     classes_content, imports = build_classes(classes)
     namespace_content += classes_content
     imports_text = ""
