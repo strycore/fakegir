@@ -418,7 +418,7 @@ def extract_namespace(namespace):
 
                 if quote_string:
                     constant_value = constant_value.replace("\\", "\\\\")
-                    constant_value = r'r"""{}"""'.format(constant_value)
+                    constant_value = 'r"""{}"""'.format(constant_value)
 
             namespace_content += "{} = {}\n".format(constant_name, constant_value)
 
