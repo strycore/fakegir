@@ -21,6 +21,11 @@ if GIR_PATHS and len(GIR_PATHS):
 else:
     GIR_PATHS = ['/usr/share/gir-1.0']
 
+if ('GTK_VERSION' in os.environ):
+    GTK_VERSION = int(os.environ["GTK_VERSION"])
+else:
+    GTK_VERSION = 3
+
 GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',
     'gint': 'int',
@@ -419,12 +424,17 @@ def iter_girs():
         gir_files.extend(glob.glob(os.path.join(gir_path, '*.gir')))
 
     for gir_file in gir_files:
-        # Don't know what to do with those, guess nobody uses PyGObject
-        # for Gtk 2.0 anyway
         basename = os.path.basename(gir_file)
-        if basename in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir'):
+        
+        # Check which GTK Version the user wants to use
+        if basename in ('Gtk-2.0.gir', 'Gdk-2.0.gir', 'GdkX11-2.0.gir') and GTK_VERSION != 2:
             continue
 
+        if basename in ('Gtk-3.0.gir', 'Gdk-3.0.gir', 'GdkX11-3.0.gir') and GTK_VERSION != 3:
+            continue
+
+        if basename in ('Gtk-4.0.gir', 'Gdk-4.0.gir', 'GdkX11-4.0.gir') and GTK_VERSION != 4:
+            continue
         try:
             module_name = basename[:basename.index('-')]
 
