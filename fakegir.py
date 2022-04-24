@@ -293,6 +293,8 @@ def extract_constructors(class_tag):
             if method_name == "new":
                 params_init = list(params)
                 params_init.insert(0, ("self", "", ""))
+                if len(params) == 0:
+                    params_init.append(("**kwargs", "", ""))
                 methods_content += insert_function("__init__", params_init,
                                                    returntype, 1, docstring)
 
