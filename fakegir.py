@@ -20,11 +20,13 @@ if GIR_PATHS and len(GIR_PATHS):
     GIR_PATHS = GIR_PATHS.split(':')
 else:
     GIR_PATHS = ['/usr/share/gir-1.0']
+    print('Using {} to generate stub. Setting GIRPATH environment variable to override.'.format(GIR_PATHS[0]))
 
 if ('GTK_VERSION' in os.environ):
     GTK_VERSION = int(os.environ["GTK_VERSION"])
 else:
     GTK_VERSION = 3
+    print('Using Gtk {}. Setting GTK_VERSION environment variable to override.'.format(GTK_VERSION))
 
 GIR_TO_NATIVE_TYPEMAP = {
     'gboolean': 'bool',
