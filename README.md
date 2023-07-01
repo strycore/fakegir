@@ -57,7 +57,13 @@ You can use Gedit Fakegir Loader by [@gabrieltigre](https://github.com/gabrielti
 VS Code Support
 ---------------
 
-You can add extra paths for jedi with this setting:
+For **Pylance** language server (which is the default), you can add extra paths with this setting:
+
+    "python.analysis.extraPaths": [
+         "/home/USERNAME/.cache/fakegir/"
+    ]
+
+For **Jedi** language server, you can add extra paths with this setting:
 
     "python.autoComplete.extraPaths": [
          "/home/USERNAME/.cache/fakegir/"
